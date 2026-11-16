@@ -484,7 +484,7 @@ function physics(s: GameState, f: Fighter, o: Fighter): void {
       if (f.sf >= f.sd) becomeIdle(f);
       break;
     case 'bdash':
-      walk = -slowMul(f, Math.max(6, 50 - f.sf * 2));
+      walk = -slowMul(f, Math.max(12, 100 - f.sf * 4));
       if (f.sf >= f.sd) becomeIdle(f);
       break;
     case 'side':
