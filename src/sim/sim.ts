@@ -480,7 +480,7 @@ function physics(s: GameState, f: Fighter, o: Fighter): void {
       walk = -slowMul(f, CHARS[f.char].walkB);
       break;
     case 'dash':
-      walk = slowMul(f, Math.max(10, 58 - f.sf * 3));
+      walk = slowMul(f, Math.max(20, 116 - f.sf * 6));
       if (f.sf >= f.sd) becomeIdle(f);
       break;
     case 'bdash':
