@@ -1,0 +1,61 @@
+// 캐릭터 초상화를 3D 모델에서 한 번 렌더링해 이미지로 캐시한다.
+import * as THREE from 'three';
+import { CHAR_LIST } from '../sim/chars';
+import type { CharId } from '../sim/types';
+import { FighterModel } from './fighterModel';
+
+const cache = new Map<CharId, string>();
+const BG: Record<CharId, string> = { seo: '#173a6b', volkov: '#1f3345', rex: '#4a3608', kang: '#4a0f12' };
+
+export function portraits(): Map<CharId, string> {
+  if (cache.size) return cache;
+  try {
+    const size = 256;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const r = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, alpha: true });
+    r.setSize(size, size, false);
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    const scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 1.8));
+    const d = new THREE.DirectionalLight(0xffffff, 1.4);
+    d.position.set(2, 3, 4);
+    scene.add(d);
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
+    for (const def of CHAR_LIST) {
+      const m = new FighterModel(def);
+      // 정면, 가드 자세 대신 차렷 + 살짝 비틀기
+      m.root.rotation.y = -0.35;
+      for (const [n, g] of Object.entries(m.joints)) {
+        if (n === 'lSh' || n === 'rSh') g.rotation.set(-0.2, 0, n === 'lSh' ? 0.25 : -0.25);
+      }
+      scene.add(m.root);
+      scene.background = new THREE.Color(BG[def.id]);
+      m.root.updateMatrixWorld(true);
+      // 머리 높이 근사
+      const head = new THREE.Vector3(0, 1.75 * def.look.height + 0.05, 0);
+      cam.position.set(0.55, head.y + 0.05, 2.3);
+      cam.lookAt(0, head.y - 0.2, 0);
+      r.render(scene, cam);
+      cache.set(def.id, canvas.toDataURL('image/png'));
+      scene.remove(m.root);
+      m.dispose();
+    }
+    r.dispose();
+    r.forceContextLoss();
+  } catch {
+    for (const def of CHAR_LIST) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 128;
+      const g = c.getContext('2d')!;
+      g.fillStyle = BG[def.id];
+      g.fillRect(0, 0, 128, 128);
+      g.fillStyle = '#fff';
+      g.font = 'bold 40px sans-serif';
+      g.textAlign = 'center';
+      g.fillText(def.name[0], 64, 78);
+      cache.set(def.id, c.toDataURL());
+    }
+  }
+  return cache;
+}

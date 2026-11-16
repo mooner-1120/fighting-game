@@ -1,0 +1,14 @@
+# Render 무료 플랜 배포 설정 (Blueprint)
+# Render 대시보드 → New → Blueprint → 이 저장소 선택 → Apply
+services:
+  - type: web
+    name: summit-fighters
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build && npm ci --prefix server
+    startCommand: node server/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
