@@ -9,7 +9,14 @@ import { cloneState, step } from '../sim/sim';
 import type { GameEvent, GameState } from '../sim/types';
 
 export const MAX_ROLLBACK = 8;
-const RING = 64;
+const RING = 256;
+const CHECK_EVERY = 30;
+
+export interface SyncPacket {
+  t: 'sync';
+  f: number;
+  s: GameState;
+}
 
 export interface NetPacket {
   t: 'in';
@@ -35,23 +42,25 @@ export class RollbackSession {
   private checks = new Map<number, number>();
   private remoteChecks = new Map<number, number>();
   desynced = false;
+  resyncs = 0;
   rollbacks = 0;
   stalls = 0;
   lastRollbackLen = 0;
   /** 새로 진행된(재시뮬레이션이 아닌) 프레임의 이벤트 */
   onEvents: (ev: GameEvent[], s: GameState) => void = () => {};
-  send: (p: NetPacket) => void = () => {};
+  send: (p: NetPacket | SyncPacket) => void = () => {};
+  private lastSyncSent = -1;
+  private syncFloor = -1; // 이 프레임 이하의 체크섬은 복구 전 값이라 무시
   private skipCounter = 0;
 
   constructor(initial: GameState, local: number, delay = 2) {
     this.state = cloneState(initial);
     this.local = local;
     this.delay = delay;
-    for (let f = 0; f < delay; f++) {
-      this.inputs[0][f] = 0;
-      this.inputs[1][f] = 0;
-    }
-    this.remoteLast = delay - 1;
+    // 내 입력만 앞 delay 프레임을 0으로 채운다. 상대 입력은 상대가 보낸 값만 쓴다
+    // (서로 입력 지연 설정이 달라도 어긋나지 않도록)
+    for (let f = 0; f < delay; f++) this.inputs[local][f] = 0;
+    this.remoteLast = -1;
     this.states[0] = cloneState(this.state);
   }
 
@@ -113,7 +122,7 @@ export class RollbackSession {
     const to = this.rollbackTo;
     this.rollbackTo = -1;
     const snap = this.states[to % RING];
-    if (!snap || this.frame - to >= RING) return;
+    if (!snap || snap.frame !== to || this.frame - to >= RING) return;
     const cur = this.frame;
     this.state = cloneState(snap);
     this.frame = to;
@@ -123,8 +132,9 @@ export class RollbackSession {
   }
 
   private sendInputs(): void {
-    const start = Math.max(this.remoteAck + 1, this.frame + this.delay - 30, 0);
+    // 상대가 아직 못 받은 입력은 모두 다시 보낸다 (중간이 비면 상대가 영원히 기다리게 됨)
     const end = this.frame + this.delay;
+    const start = Math.max(this.remoteAck + 1, end - 240, 0);
     const list: number[] = [];
     for (let f = start; f <= end; f++) list.push(this.inputs[this.local][f] ?? 0);
     const pkt: NetPacket = { t: 'in', s: start, i: list, a: this.remoteLast, f: this.frame };
@@ -157,17 +167,21 @@ export class RollbackSession {
   }
 
   private verifyChecksums(): void {
-    // 양쪽 입력이 모두 확정된 60배수 프레임의 상태 체크섬을 기록·비교
+    // 양쪽 입력이 모두 확정된 프레임의 상태 체크섬을 기록·비교
     const confirmed = Math.min(this.remoteLast + 1, this.frame);
-    const cf = Math.floor(confirmed / 60) * 60;
+    const cf = Math.floor(confirmed / CHECK_EVERY) * CHECK_EVERY;
     if (cf > 0 && !this.checks.has(cf) && this.rollbackTo < 0) {
       const st = this.states[cf % RING];
-      if (st && this.frame - cf < RING) this.checks.set(cf, checksum(st));
+      if (st && st.frame === cf) this.checks.set(cf, checksum(st));
     }
     for (const [f, c] of this.remoteChecks) {
+      if (f <= this.syncFloor) {
+        this.remoteChecks.delete(f);
+        continue;
+      }
       const mine = this.checks.get(f);
       if (mine !== undefined) {
-        if (mine !== c) this.desynced = true;
+        if (mine !== c) this.onDesync();
         this.remoteChecks.delete(f);
       }
     }
@@ -175,6 +189,40 @@ export class RollbackSession {
       const keys = [...this.checks.keys()].sort((a, b) => a - b);
       for (let i = 0; i < keys.length - 10; i++) this.checks.delete(keys[i]);
     }
+  }
+
+  /** 어긋남 감지: 1P(호스트)가 확정 상태를 보내 2P가 그 상태로 맞춘다 */
+  private onDesync(): void {
+    this.desynced = true;
+    if (this.local !== 0) return;
+    let f = -1;
+    for (const k of this.checks.keys()) if (this.frame - k < RING - 8) f = Math.max(f, k);
+    if (f <= 0 || f === this.lastSyncSent) {
+      this.desynced = false; // 이미 보낸 복구가 도착하는 중
+      return;
+    }
+    const st = this.states[f % RING];
+    if (!st || st.frame !== f) return;
+    this.lastSyncSent = f;
+    this.syncFloor = f;
+    this.resyncs++;
+    this.send({ t: 'sync', f, s: st });
+    this.desynced = false;
+  }
+
+  /** 호스트가 보낸 상태로 덮어쓰고 그 프레임부터 다시 시뮬레이션 */
+  receiveSync(p: SyncPacket): void {
+    if (this.local === 0 || this.frame - p.f >= RING - 1 || p.f > this.frame) return;
+    this.states[p.f % RING] = cloneState(p.s);
+    this.checks.clear();
+    this.checks.set(p.f, checksum(p.s));
+    this.remoteChecks.clear();
+    this.syncFloor = p.f;
+    if (p.f === this.frame) {
+      this.state = cloneState(p.s);
+    } else if (this.rollbackTo < 0 || p.f < this.rollbackTo) this.rollbackTo = p.f;
+    this.resyncs++;
+    this.desynced = false;
   }
 
   /** 확정된 프레임까지의 입력 (리플레이·관전용) */

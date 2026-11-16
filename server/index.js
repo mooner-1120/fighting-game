@@ -15,6 +15,16 @@ const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CHARS = ['seo', 'volkov', 'rex', 'kang'];
 const STAGE_COUNT = 6;
 
+// 서버가 제공하는 게임 빌드 ID. 브라우저 버전이 다르면 시뮬레이션이 어긋나므로 입장을 막고 새로고침시킨다
+let SERVER_BUILD = null;
+function loadBuild() {
+  try {
+    SERVER_BUILD = JSON.parse(fs.readFileSync(path.join(DIST, 'version.json'), 'utf8')).build || null;
+  } catch {
+    SERVER_BUILD = null; // 개발 모드 (dist 없음)
+  }
+}
+
 /** @type {Map<string, any>} */
 const rooms = new Map();
 let nextClientId = 1;
@@ -26,6 +36,8 @@ const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.webm': 'video/webm',
 };
+
+loadBuild();
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -345,8 +357,13 @@ wss.on('connection', (ws) => {
         send(ws, { t: 'pong', ts: msg.ts });
         break;
       case 'hello': {
+        const ver = typeof msg.ver === 'string' ? msg.ver : 'unknown';
+        if (SERVER_BUILD && ver !== SERVER_BUILD) {
+          return send(ws, { t: 'error', code: 'version', msg: '게임이 업데이트되었습니다. 새로고침해 주세요.' });
+        }
         if (client.room) leave(client);
         client.nick = cleanNick(msg.nick);
+        client.ver = ver;
         let r;
         if (msg.create || !msg.room) {
           const code = makeCode();
@@ -356,6 +373,9 @@ wss.on('connection', (ws) => {
           r = rooms.get(String(msg.room).toUpperCase().trim());
           if (!r) return send(ws, { t: 'error', msg: '방을 찾을 수 없습니다. 코드를 확인하세요.' });
           if (r.players.size >= MAX_PLAYERS) return send(ws, { t: 'error', msg: '방이 가득 찼습니다 (최대 8명).' });
+          // 개발 모드에서도 방 안의 버전은 같아야 한다
+          const other = r.players.values().next().value;
+          if (other && other.ver !== ver) return send(ws, { t: 'error', code: 'version', msg: '방에 있는 사람과 게임 버전이 다릅니다. 새로고침해 주세요.' });
         }
         if (CHARS.includes(msg.char)) client.char = msg.char;
         client.room = r;

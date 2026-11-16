@@ -56,5 +56,42 @@ if (peers[0].frame < T * 0.8) {
   console.log('  ✗ 진행이 너무 느림');
   fail++;
 }
+
+// ---- 입력 지연 설정이 서로 다르고, 중간에 한쪽 상태가 깨져도 복구되는지
+{
+  let sd = 4242;
+  const r = () => ((sd = (Math.imul(sd, 1103515245) + 12345) | 0) >>> 8 & 0xffffff) / (1 << 24);
+  const ps = [new RollbackSession(createState(cfg), 0, 2), new RollbackSession(createState(cfg), 1, 4)];
+  const qq: { at: number; to: number; p: unknown }[] = [];
+  let t = 0;
+  ps.forEach((s, i) => (s.send = (p) => { if (r() < 0.1) return; qq.push({ at: t + 1 + Math.floor(r() * 6), to: 1 - i, p: JSON.parse(JSON.stringify(p)) }); }));
+  const hd = [0, 0];
+  for (t = 0; t < 4000; t++) {
+    if (t === 1500) {
+      // 강제로 어긋나게: 현재 상태와 저장된 스냅샷 모두 (롤백으로 지워지지 않는 진짜 불일치)
+      const p1 = ps[1] as unknown as { state: { f: { hp: number }[] }; states: ({ f: { hp: number }[] } | null)[] };
+      p1.state.f[0].hp -= 300;
+      for (const st of p1.states) if (st) st.f[0].hp -= 300;
+    }
+    for (let i = 0; i < 2; i++) {
+      if (r() < 0.12) hd[i] = Math.floor(r() * 256);
+      ps[i].tick(hd[i]);
+    }
+    for (let k = qq.length - 1; k >= 0; k--) if (qq[k].at <= t) {
+      const m = qq[k].p as { t: string };
+      if (m.t === 'sync') ps[qq[k].to].receiveSync(m as never); else ps[qq[k].to].receive(m as never);
+      qq.splice(k, 1);
+    }
+  }
+  for (let n = 0; n < 300; n++) {
+    for (const x of qq.splice(0)) { const m = x.p as { t: string }; if (m.t === 'sync') ps[x.to].receiveSync(m as never); else ps[x.to].receive(m as never); }
+    for (let i = 0; i < 2; i++) ps[i].tick(hd[i]);
+  }
+  const f0 = ps[0].frame, f1 = ps[1].frame;
+  const same = f0 === f1 ? checksum(ps[0].state) === checksum(ps[1].state) : null;
+  const ok2 = ps[1].resyncs > 0 && !ps[0].desynced && !ps[1].desynced && same !== false;
+  console.log(ok2 ? '  ✓' : '  ✗', `입력 지연 2F/4F 혼합 + 강제 어긋남 복구 (복구 ${ps[1].resyncs}회, 프레임 ${f0}/${f1}, 최종 상태 ${same === null ? '프레임 다름' : same ? '일치' : '불일치'})`);
+  if (!ok2) fail++;
+}
 if (fail) process.exit(1);
 console.log('롤백 테스트 통과');

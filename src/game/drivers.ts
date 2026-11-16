@@ -7,7 +7,7 @@ import { cloneState, createState, step } from '../sim/sim';
 import { BTN_LK, BTN_LP, BTN_RK, BTN_RP, IN_DOWN, IN_LEFT, IN_RIGHT, type GameEvent, type GameState, type MatchConfig } from '../sim/types';
 import { onLeft } from '../sim/sim';
 import { CpuBrain } from './ai';
-import { RollbackSession, type NetPacket } from './rollback';
+import { RollbackSession, type NetPacket, type SyncPacket } from './rollback';
 
 export interface Replay {
   v: 1;
@@ -238,6 +238,8 @@ export class OnlineDriver extends Driver {
       if (m.t === 'in') {
         this.peerGo = true;
         this.session.receive(m as NetPacket);
+      } else if (m.t === 'sync') {
+        this.session.receiveSync(m as SyncPacket);
       } else if (m.t === 'go') {
         this.peerGo = true;
         if (!m.ack) this.link.send({ t: 'go', ack: true });
@@ -274,7 +276,8 @@ export class OnlineDriver extends Driver {
     const mode = this.link.mode === 'p2p' ? 'P2P' : this.link.mode === 'relay' ? '중계' : '연결 중';
     const ping = Math.round(this.link.rtt);
     let t = `${mode} · 핑 ${ping}ms · 롤백 ${ses.lastRollbackLen}F`;
-    if (ses.desynced) t += ' · ⚠ 동기화 어긋남';
+    if (ses.desynced) t += ' · 동기화 복구 중';
+    else if (ses.resyncs) t += ` · 동기화 복구 ${ses.resyncs}회`;
     if (!this.started) t = `상대와 연결 중… (${mode})`;
     return t;
   }

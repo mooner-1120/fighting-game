@@ -8,6 +8,7 @@ import { portraits } from '../render/portraits';
 import { STAGES } from '../render/stages';
 import { CHAR_LIST, CHARS } from '../sim/chars';
 import type { CharId, MatchConfig } from '../sim/types';
+import { BUILD_ID } from '../build';
 import { h, mount, toast } from './dom';
 import { GameScreen } from './gameScreen';
 import type { Nav } from './menus';
@@ -104,7 +105,7 @@ class Lobby {
     clearTimeout(slow);
     if (this.left) return this.conn.close();
     this.bind();
-    this.conn.send({ t: 'hello', nick: settings.nick, room: this.code, create: !this.code, char: this.myChar });
+    this.conn.send({ t: 'hello', nick: settings.nick, room: this.code, create: !this.code, char: this.myChar, ver: BUILD_ID });
   }
 
   private bind() {
@@ -116,6 +117,17 @@ class Lobby {
       history.replaceState(null, '', url.toString());
     });
     c.on('error', (m) => {
+      if (m.code === 'version') {
+        // 옛 버전 페이지 → 새 버전으로 새로고침 (같은 방으로 다시 들어옴)
+        toast('게임이 업데이트되었습니다. 새 버전으로 다시 불러옵니다…', 4000);
+        this.left = true;
+        this.conn.close();
+        const url = new URL(location.href);
+        if (this.code) url.searchParams.set('room', this.code);
+        url.searchParams.set('v', String(Date.now()));
+        setTimeout(() => location.replace(url.toString()), 1200);
+        return;
+      }
       toast(m.msg, 4000);
       if (!this.room) {
         this.leave();
