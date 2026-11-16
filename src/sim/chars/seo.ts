@@ -33,7 +33,7 @@ moves['ult'] = ultMove('국민 소통 라이브');
 export const seo: CharDef = {
   id: 'seo',
   name: '이재명',
-  country: '동방민국 한율',
+  country: '대한민국',
   title: '서민형 승부사',
   style: '밸런스형 (입문 추천)',
   maxHp: 1000,

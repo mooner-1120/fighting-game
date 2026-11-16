@@ -29,7 +29,7 @@ function lob(s: GameState, f: Fighter, tx: number, tz: number, T: number) {
 export const kang: CharDef = {
   id: 'kang',
   name: '김정은',
-  country: '철막인민공화국',
+  country: '북한',
   title: '은둔의 원수',
   style: '원거리 설치형',
   maxHp: 960,
@@ -43,7 +43,7 @@ export const kang: CharDef = {
   resMax: 3,
   resInit: [1, 0],
   ultName: '핵 단추',
-  ultHeadline: '[긴급 속보] 철막인민공화국, 붉은 단추 눌러',
+  ultHeadline: '[긴급 속보] 북한, 붉은 단추 눌러',
   ultTicker: [
     "원수님, 단추 누르며 '이번엔 진짜다'",
     '인민 박수단 박수 소리 측정 불가 수준',

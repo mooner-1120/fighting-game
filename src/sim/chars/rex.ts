@@ -21,7 +21,7 @@ moves['ult'] = ultMove('관세 폭탄');
 export const rex: CharDef = {
   id: 'rex',
   name: '도널드 트럼프',
-  country: '자유합중국 콜럼비아',
+  country: '미국',
   title: '재벌 대통령',
   style: '파워형 돌진',
   maxHp: 1050,
@@ -35,7 +35,7 @@ export const rex: CharDef = {
   resMax: 999,
   resInit: [100, 0, 0],
   ultName: '관세 폭탄',
-  ultHeadline: '[긴급 속보] 콜럼비아, 전 세계에 관세 25% 부과',
+  ultHeadline: '[긴급 속보] 미국, 전 세계에 관세 25% 부과',
   ultTicker: [
     "트럼프 '역대 최고의 관세, 아무도 이런 관세 본 적 없다'",
     '돈다발 폭격으로 링 주변 교통 마비',
