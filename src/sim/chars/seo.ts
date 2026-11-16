@@ -32,7 +32,7 @@ moves['ult'] = ultMove('국민 소통 라이브');
 
 export const seo: CharDef = {
   id: 'seo',
-  name: '서도윤',
+  name: '이재명',
   country: '동방민국 한율',
   title: '서민형 승부사',
   style: '밸런스형 (입문 추천)',
@@ -47,7 +47,7 @@ export const seo: CharDef = {
   resMax: 100,
   resInit: [50],
   ultName: '국민 소통 라이브',
-  ultHeadline: '[생중계] 서도윤, 국민 소통 라이브 긴급 편성',
+  ultHeadline: '[생중계] 이재명, 국민 소통 라이브 긴급 편성',
   ultTicker: [
     '동시 접속자 5천만 명 돌파',
     "댓글창 폭주 '떡볶이 맛집 어디예요'",

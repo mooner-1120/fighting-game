@@ -736,7 +736,7 @@ export function resolveHit(s: GameState, A: Fighter, D: Fighter, h: HitDef, c: H
   const hz = idiv(A.z + D.z, 2);
   const hy = Math.max(600, D.y + (h.lvl === 'h' ? 1500 : h.lvl === 'm' ? 1000 : 300));
 
-  // 반격 자세 (강태양 현지 지도 포즈)
+  // 반격 자세 (김정은 현지 지도 포즈)
   if (!c.proj && !isUlt && D.st === 'atk' && Dm && inRange(D.mf, Dm.counter)) {
     emit(s, { k: 'parry', who: D.idx });
     D.move = 'parryhit';

@@ -28,7 +28,7 @@ function lob(s: GameState, f: Fighter, tx: number, tz: number, T: number) {
 
 export const kang: CharDef = {
   id: 'kang',
-  name: '강태양 원수',
+  name: '김정은',
   country: '철막인민공화국',
   title: '은둔의 원수',
   style: '원거리 설치형',

@@ -127,7 +127,7 @@ export class NewsOverlay {
       g.globalAlpha = 1;
     }
 
-    // 서도윤: 댓글 탄막
+    // 이재명: 댓글 탄막
     if (def.id === 'seo' && t > 1.3) {
       if (Math.random() < 0.6) {
         const cols = ['#fff', '#ffeb3b', '#80deea', '#ff8a80', '#b9f6ca'];

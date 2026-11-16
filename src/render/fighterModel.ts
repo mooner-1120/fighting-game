@@ -355,7 +355,7 @@ export class FighterModel {
     club.visible = false;
     hand.add(club);
     this.props.golf = club;
-    // 서류 (서도윤)
+    // 서류 (이재명)
     const paper = box(0.3, 0.02, 0.4, mk(0xf8f8f0));
     paper.position.set(0, -0.08, 0.1);
     paper.visible = false;
@@ -404,7 +404,7 @@ export class FighterModel {
     this.hips.position.y = this.legLen + this.curDy;
     this.hips.rotation.x = (this.curLean + this.curRoll) * DEG;
 
-    // 웃통 벗기 (볼코프 아머)
+    // 웃통 벗기 (푸틴 아머)
     const bare = this.def.id === 'volkov' && f.buffs.armor > 0;
     for (const o of this.jacket) o.visible = !bare;
     for (const o of this.bareChest) o.visible = bare;

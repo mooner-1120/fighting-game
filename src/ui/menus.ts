@@ -19,11 +19,11 @@ export interface Nav {
 
 const TICKER = [
   '[속보] 세계 정상 8인, 정상회의장 링 위에서 직접 담판 예정',
-  '볼코프 대통령 「잡히면 못 푼다」 경고',
-  '렉스 골드 「역대 최고의 펀치, 다들 그렇게 말한다」',
-  '강태양 원수, 단추 위치 공개 거부',
-  '서도윤, 시장 방문 중 떡볶이로 체력 회복',
-  '※ 모든 인물·국가는 가상입니다',
+  '푸틴 대통령 「잡히면 못 푼다」 경고',
+  '트럼프 「역대 최고의 펀치, 다들 그렇게 말한다」',
+  '김정은, 단추 위치 공개 거부',
+  '이재명, 시장 방문 중 떡볶이로 체력 회복',
+  '※ 비상업 풍자 패러디입니다. 실제 인물의 발언·행동과 무관합니다',
 ];
 
 export function titleScreen(nav: Nav) {
@@ -42,7 +42,7 @@ export function titleScreen(nav: Nav) {
       h('div', null,
         h('div', { class: 'breaking' }, '긴급 속보'),
         h('h1', { class: 'logo' }, '서밋', h('br'), '파이터즈', h('small', null, 'SUMMIT FIGHTERS · 세계 정상회의 격투')),
-        h('p', { class: 'muted', style: 'max-width:520px;line-height:1.7;margin-top:20px' }, '가상 세계의 정상들이 링 위에서 맞붙는 철권식 3D 격투 + 정치 풍자. 링크 하나로 친구들과 바로 대전하세요.'),
+        h('p', { class: 'muted', style: 'max-width:520px;line-height:1.7;margin-top:20px' }, '세계 정상들이 링 위에서 맞붙는 철권식 3D 격투 + 정치 풍자. 링크 하나로 친구들과 바로 대전하세요.'),
         h('div', { class: 'portrait-strip' }, ...CHAR_LIST.map((c) => h('img', { src: pics.get(c.id), alt: c.name, title: `${c.name} — ${c.title}` }))),
       ),
       h('div', { class: 'menu' },

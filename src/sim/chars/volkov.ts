@@ -20,7 +20,7 @@ moves['ult'] = ultMove('동토의 겨울');
 
 export const volkov: CharDef = {
   id: 'volkov',
-  name: '볼코프',
+  name: '블라디미르 푸틴',
   country: '북방연방 볼가리아',
   title: '강철 스트롱맨',
   style: '잡기형 (삼보·유도)',
@@ -38,7 +38,7 @@ export const volkov: CharDef = {
   ultHeadline: '[긴급 속보] 볼가리아, 가스 밸브 전면 차단',
   ultTicker: [
     '동토의 겨울 도래… 난방비 300% 폭등',
-    '볼코프 대통령, 웃통 벗고 직접 밸브 잠가',
+    '푸틴 대통령, 웃통 벗고 직접 밸브 잠가',
     "기상청 '체감온도 영하 80도, 외출 자제'",
     '곰들도 동면 포기하고 출근',
   ],
