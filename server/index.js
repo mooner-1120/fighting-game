@@ -166,6 +166,7 @@ function startMatch(room, pair) {
     rounds: room.settings.rounds,
     seed: (Math.random() * 0x7fffffff) | 0,
     spokesman: [room.settings.spokesman && a.spoke, room.settings.spokesman && b.spoke],
+    guardBack: room.settings.guard === 'back',
     names: [a.nick, b.nick],
     inputs: [[], []],
     results: new Map(),
@@ -174,7 +175,7 @@ function startMatch(room, pair) {
   const m = room.match;
   broadcast(room, {
     t: 'match',
-    match: { id: m.id, p: m.p, chars: m.chars, stage: m.stage, rounds: m.rounds, seed: m.seed, spokesman: m.spokesman, names: m.names },
+    match: { id: m.id, p: m.p, chars: m.chars, stage: m.stage, rounds: m.rounds, seed: m.seed, spokesman: m.spokesman, guardBack: m.guardBack, names: m.names },
   });
   pushRoom(room);
 }
@@ -367,7 +368,7 @@ wss.on('connection', (ws) => {
         let r;
         if (msg.create || !msg.room) {
           const code = makeCode();
-          r = { code, host: client.id, players: new Map(), queue: [], mode: 'versus', settings: { rounds: 3, spokesman: true }, match: null, tournament: null, countdownTimer: null, countdownAt: 0 };
+          r = { code, host: client.id, players: new Map(), queue: [], mode: 'versus', settings: { rounds: 3, spokesman: true, guard: 'auto' }, match: null, tournament: null, countdownTimer: null, countdownAt: 0 };
           rooms.set(code, r);
         } else {
           r = rooms.get(String(msg.room).toUpperCase().trim());
@@ -388,7 +389,7 @@ wss.on('connection', (ws) => {
         // 진행 중인 경기 관전
         if (r.match) {
           const m = r.match;
-          send(ws, { t: 'match', match: { id: m.id, p: m.p, chars: m.chars, stage: m.stage, rounds: m.rounds, seed: m.seed, spokesman: m.spokesman, names: m.names }, spectate: true });
+          send(ws, { t: 'match', match: { id: m.id, p: m.p, chars: m.chars, stage: m.stage, rounds: m.rounds, seed: m.seed, spokesman: m.spokesman, guardBack: m.guardBack, names: m.names }, spectate: true });
           send(ws, { t: 'specHistory', mid: m.id, p0: m.inputs[0], p1: m.inputs[1] });
         }
         break;
@@ -396,7 +397,7 @@ wss.on('connection', (ws) => {
       case 'spectate': {
         const m = room && room.match;
         if (!m || m.p.includes(client.id)) return;
-        send(ws, { t: 'match', match: { id: m.id, p: m.p, chars: m.chars, stage: m.stage, rounds: m.rounds, seed: m.seed, spokesman: m.spokesman, names: m.names }, spectate: true });
+        send(ws, { t: 'match', match: { id: m.id, p: m.p, chars: m.chars, stage: m.stage, rounds: m.rounds, seed: m.seed, spokesman: m.spokesman, guardBack: m.guardBack, names: m.names }, spectate: true });
         send(ws, { t: 'specHistory', mid: m.id, p0: m.inputs[0], p1: m.inputs[1] });
         break;
       }
@@ -420,6 +421,7 @@ wss.on('connection', (ws) => {
         if (!room || room.host !== client.id) return;
         if (Number.isInteger(msg.rounds) && msg.rounds >= 1 && msg.rounds <= 5) room.settings.rounds = msg.rounds;
         if (typeof msg.spokesman === 'boolean') room.settings.spokesman = msg.spokesman;
+        if (msg.guard === 'auto' || msg.guard === 'back') room.settings.guard = msg.guard;
         pushRoom(room);
         break;
       case 'tournament':

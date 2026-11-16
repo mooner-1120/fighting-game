@@ -218,6 +218,23 @@ const QCF = (btn: number) => [[IN_DOWN, 0], [IN_DOWN, 0], [DF, 0], [DF, 0], [IN_
   ok(ended && s.winner === 0 && s.wins[0] === 2, `2선승 매치 종료 (승자 P${s.winner + 1})`);
 }
 
+{
+  // 가드 방식: 뒤 누르기
+  const g = (guardBack: boolean, p2: number, atk: number) => {
+    const s = createState({ ...cfg('seo', 'volkov', 7, false), guardBack });
+    fight(s);
+    s.f[0].x = -400;
+    s.f[1].x = 400;
+    const hp = s.f[1].hp;
+    for (let i = 0; i < 30; i++) step(s, [i < 2 ? atk : 0, p2]);
+    return s.f[1].hp < hp;
+  };
+  ok(!g(false, 0, BTN_LP), '자동 가드: 가만히 있으면 상단 막음');
+  ok(g(true, 0, BTN_LP), '뒤 누르기: 가만히 있으면 맞음');
+  ok(!g(true, IN_RIGHT, BTN_LP), '뒤 누르기: 뒤를 누르면 상단 막음');
+  ok(g(true, IN_DOWN, IN_DOWN | BTN_LK), '뒤 누르기: 그냥 앉으면 하단 맞음');
+  ok(!g(true, IN_DOWN | IN_RIGHT, IN_DOWN | BTN_LK), '뒤 누르기: ↙ 앉아 가드로 하단 막음');
+}
 void BTN_RK;
 if (failed) {
   console.log(`\n실패 ${failed}개`);

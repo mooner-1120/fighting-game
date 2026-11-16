@@ -225,6 +225,7 @@ export interface MatchConfig {
   spokesman: [boolean, boolean];
   seed: number;
   noGuard?: [boolean, boolean]; // 트레이닝 더미용
+  guardBack?: boolean; // true: 뒤를 눌러야 가드 (스트리트 파이터식), false/없음: 가만히 있으면 자동 가드 (철권식)
 }
 
 export interface GameState {

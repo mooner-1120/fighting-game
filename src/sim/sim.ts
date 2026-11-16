@@ -726,6 +726,8 @@ interface HitCtx {
 function canGuard(s: GameState, D: Fighter): boolean {
   if (s.cfg.noGuard?.[D.idx]) return false;
   if ((D.hist[0] & R_F) !== 0 && D.st !== 'bs') return false;
+  // 뒤 누르기 방식: 가드 경직 중이 아니면 뒤(↙ 포함)를 누르고 있어야 막는다
+  if (s.cfg.guardBack && (D.hist[0] & R_B) === 0 && D.st !== 'bs') return false;
   return D.st === 'idle' || D.st === 'walkb' || D.st === 'crouch' || D.st === 'bs' || (D.st === 'side' && D.sf > 2) || (D.st === 'bdash' && D.sf > 10);
 }
 

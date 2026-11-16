@@ -32,7 +32,7 @@ interface RoomSnap {
   code: string;
   host: number;
   mode: 'versus' | 'tournament';
-  settings: { rounds: number; spokesman: boolean };
+  settings: { rounds: number; spokesman: boolean; guard?: 'auto' | 'back' };
   players: RoomPlayer[];
   queue: number[];
   match: { id: number; p: [number, number]; chars: [CharId, CharId]; stage: number } | null;
@@ -47,6 +47,7 @@ interface MatchMsg {
   rounds: number;
   seed: number;
   spokesman: [boolean, boolean];
+  guardBack?: boolean;
   names: [string, string];
 }
 
@@ -180,7 +181,7 @@ class Lobby {
 
   // ---------------------------------------------------------- 경기
   private onMatch(m: MatchMsg) {
-    const cfg: MatchConfig = { chars: m.chars, stage: m.stage, rounds: m.rounds, timer: 60, spokesman: m.spokesman, seed: m.seed };
+    const cfg: MatchConfig = { chars: m.chars, stage: m.stage, rounds: m.rounds, timer: 60, spokesman: m.spokesman, seed: m.seed, guardBack: !!m.guardBack };
     const local = m.p.indexOf(this.conn.id);
     this.game?.destroy();
     this.game = null;
@@ -257,6 +258,11 @@ class Lobby {
         h('b', null, isHost ? '방 설정 (방장)' : '방 설정'),
         h('label', { class: 'row small' }, '승리 조건 ',
           h('select', { disabled: !isHost, onchange: (e: Event) => this.conn.send({ t: 'settings', rounds: Number((e.target as HTMLSelectElement).value) }) }, ...[1, 2, 3, 4, 5].map((n) => h('option', { value: n, selected: r.settings.rounds === n }, `${n}선승`)))),
+        h('label', { class: 'row small' }, '가드 방식 ',
+          h('select', { disabled: !isHost, onchange: (e: Event) => this.conn.send({ t: 'settings', guard: (e.target as HTMLSelectElement).value }) },
+            h('option', { value: 'auto', selected: r.settings.guard !== 'back' }, '자동 가드 (가만히 있으면 막음 · 철권식)'),
+            h('option', { value: 'back', selected: r.settings.guard === 'back' }, '뒤 누르기 (뒤를 눌러야 막음)'),
+          )),
         h('label', { class: 'row small' }, h('input', { type: 'checkbox', disabled: !isHost, checked: r.settings.spokesman, onchange: (e: Event) => this.conn.send({ t: 'settings', spokesman: (e.target as HTMLInputElement).checked }) }), '스포크스맨 모드 허용 (초보용 연타 콤보)'),
         r.mode === 'tournament'
           ? h('div', { class: 'tag gold' }, '토너먼트 진행 중')
