@@ -52,6 +52,30 @@ export class CpuBrain {
       this.push(BTN_LP | BTN_RP, BTN_LP | BTN_RP);
       return 0;
     }
+    // 캐릭터 고유 행동
+    const qcf = (btn: number) => [IN_DOWN, IN_DOWN, IN_DOWN | F, IN_DOWN | F, F, F | btn, F | btn, 0];
+    if (me.char === 'thatcher' && me.res[1] > 0 && d > 1500 && r < 0.6) {
+      // 티타임 창이 열렸고 상대가 멀면 차를 마신다
+      this.push(IN_DOWN, IN_DOWN | BTN_LP | BTN_RP, IN_DOWN | BTN_LP | BTN_RP, 0);
+      return IN_DOWN;
+    }
+    if (me.char === 'thatcher' && d > 1500 && d < 3500 && r < 0.12) {
+      this.push(...qcf(BTN_RP)); // 이층버스
+      return 0;
+    }
+    if (me.char === 'xi' && d > 1800 && r < 0.1 && !s.projs.some((p) => p.owner === this.idx && p.kind === 'firewall')) {
+      this.push(...qcf(BTN_RP)); // 방벽
+      return 0;
+    }
+    if (me.char === 'mbs' && d > 1800 && d < 3200 && r < 0.12) {
+      this.push(...qcf(BTN_LP)); // 슈퍼카 돌진
+      return 0;
+    }
+    if (me.char === 'macron' && d > 2400 && me.hp * 2 < me.maxHp && r < 0.08) {
+      this.push(B | BTN_LP, B | BTN_LP, 0); // 멀리서 건배 회복
+      return 0;
+    }
+
     if (d > 2200) {
       if (r < 0.15) {
         this.push(IN_DOWN, IN_DOWN, IN_DOWN | F, IN_DOWN | F, F, F | BTN_LP, F | BTN_LP, 0);
@@ -87,6 +111,12 @@ export class CpuBrain {
       [IN_DOWN, IN_DOWN, IN_DOWN | F, IN_DOWN | F, F, F | BTN_LP, F | BTN_LP],
     ];
     if (me.gauge >= 1000 && Math.random() < 0.1) opts.push([BTN_LK | BTN_RK, BTN_LK | BTN_RK]);
+    // 근거리 고유기: 마크롱 연속 찌르기, 빈 살만 모래폭풍 대시
+    if (me.char === 'macron') {
+      opts[11] = [...qcf(BTN_LP), 0, 0, 0, 0, BTN_LP, BTN_LP, 0, 0, 0, 0, 0, 0, 0, 0, BTN_LP, BTN_LP];
+      opts[10] = [B | BTN_RK, B | BTN_RK]; // 건배(←LP)는 근거리에서 쓰지 않는다
+    }
+    if (me.char === 'mbs' && Math.random() < 0.3) opts.push([B | BTN_LP, B | BTN_LP]);
     if (me.hp * 4 <= me.maxHp && !me.emergencyUsed) opts.push([BTN_LP | BTN_RK, BTN_LP | BTN_RK]);
     this.push(...opts[Math.floor(Math.random() * opts.length)]);
     return 0;

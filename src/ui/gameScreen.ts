@@ -12,6 +12,9 @@ import { Hud } from './hud';
 import { moveListModal } from './movelist';
 import { settings } from './storage';
 
+/** 회복 알림 문구 (캐릭터별) */
+const HEAL_NAME: Partial<Record<string, string>> = { seo: '떡볶이 회복', thatcher: '티타임 회복', macron: '건배 회복' };
+
 export type GameMode = 'local' | 'cpu' | 'training' | 'online' | 'spectate' | 'replay';
 
 export interface GameOpts {
@@ -253,7 +256,13 @@ export class GameScreen {
           break;
         case 'heal':
           audio.play('heal');
-          this.hud.toast(e.who, `떡볶이 회복 +${e.amt}`);
+          this.hud.toast(e.who, `${HEAL_NAME[s.f[e.who].char] ?? '회복'} +${e.amt}`);
+          break;
+        case 'justGuard':
+          audio.play('parry');
+          break;
+        case 'teaTime':
+          audio.play('gauge');
           break;
         case 'special':
           if (e.name.includes('$')) audio.play('money');

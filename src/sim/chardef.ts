@@ -27,6 +27,16 @@ export interface CharHooks {
   spawn?(s: GameState, f: Fighter, o: Fighter, kind: string): void;
   ultDecide?(s: GameState, f: Fighter, o: Fighter, cine: Cine): void;
   ultApply(s: GameState, f: Fighter, o: Fighter, cine: Cine): void;
+  /** 궁극기 연출 매 프레임 (cine.v 갱신 등) */
+  ultTick?(s: GameState, f: Fighter, o: Fighter, cine: Cine): void;
+  /** 궁극기 연출이 끝나고 기본 처리(상대 띄우기 등)가 끝난 뒤 호출 */
+  ultAfter?(s: GameState, f: Fighter, o: Fighter, cine: Cine): void;
+  /** 캐릭터 고유 명령. 기술 id 를 돌려주면 그 기술을 쓴다. pr = 최근 눌린 버튼 */
+  customCmd?(s: GameState, f: Fighter, o: Fighter, pr: number): string | null;
+  /** 이동 속도 배율(%) — 걷기·대시 */
+  speedMul?(s: GameState, f: Fighter): number;
+  /** 가드 성공 시. just = 저스트 가드(직전 몇 F 안에 뒤 입력). 돌려준 값만큼 가드 경직이 줄어든다 */
+  onGuard?(s: GameState, f: Fighter, att: Fighter, just: boolean): number;
 }
 
 export interface CharLook {

@@ -14,6 +14,8 @@ import {
   BTN_LP,
   BTN_RK,
   BTN_RP,
+  CAGE_R,
+  emptyBuffs,
   type CharId,
   type Fighter,
   type GameState,
@@ -48,7 +50,7 @@ function newFighter(idx: number, char: CharId, spoke: boolean): Fighter {
     sideDir: 0, jumpDir: 0,
     gauge: 0, ultUsed: false, emergencyUsed: false,
     combo: 0, comboDmg: 0, comboMoves: [], airHits: 0, wallHits: 0,
-    buffs: { armor: 0, atkUp: 0, slow: 0, tariff: 0, briefing: 0 },
+    buffs: emptyBuffs(),
     res: [...def.resInit],
     hist: new Array(HIST_LEN).fill(0),
     raw: 0, downTapT: 0, buf: 0, bufT: 0,
@@ -91,7 +93,7 @@ function resetRound(s: GameState): void {
     f.queued = null;
     f.ultUsed = false;
     f.emergencyUsed = false;
-    f.buffs = { armor: 0, atkUp: 0, slow: 0, tariff: 0, briefing: 0 };
+    f.buffs = emptyBuffs();
     f.res = [...def.resInit];
     f.throwInfo = null;
     f.dmgTaken = 0;
@@ -132,6 +134,12 @@ function inRange(v: number, r?: [number, number]): boolean {
 
 function slowMul(f: Fighter, v: number): number {
   return f.buffs.slow > 0 ? idiv(v, 2) : v;
+}
+
+/** 걷기·대시 속도: 둔화 + 캐릭터 속도 배율(빈 살만 유가) */
+function moveSpeed(s: GameState, f: Fighter, v: number): number {
+  const mul = CHARS[f.char].hooks.speedMul;
+  return slowMul(f, mul ? idiv(v * mul(s, f), 100) : v);
 }
 
 function becomeIdle(f: Fighter): void {
@@ -175,6 +183,8 @@ export function step(s: GameState, inputs: [number, number]): void {
 
   if (s.cine) {
     s.cine.t++;
+    const owner = s.f[s.cine.owner];
+    CHARS[owner.char].hooks.ultTick?.(s, owner, s.f[1 - s.cine.owner], s.cine);
     if (s.cine.t >= s.cine.dur) endCine(s);
     return;
   }
@@ -201,6 +211,8 @@ export function step(s: GameState, inputs: [number, number]): void {
     if (bf.slow > 0) bf.slow--;
     if (bf.tariff > 0) bf.tariff--;
     if (bf.briefing > 0) bf.briefing--;
+    if (bf.hidden > 0) bf.hidden--;
+    if (bf.cage > 0) bf.cage--;
     if (f.bufT > 0) f.bufT--;
   }
 
@@ -215,6 +227,7 @@ export function step(s: GameState, inputs: [number, number]): void {
   physics(s, a, b);
   physics(s, b, a);
   pushApart(s);
+  for (const f of s.f) cageCheck(f);
   for (const f of s.f) wallCheck(s, f);
 
   // 타격 판정 (동시 처리 → 상쇄 허용)
@@ -349,6 +362,8 @@ function tryMove(s: GameState, f: Fighter, o: Fighter, onlyCombos: boolean): boo
   const def = CHARS[f.char];
 
   const both = (x: number, y: number) => (pr & x) !== 0 && (pr & y) !== 0;
+  const custom = def.hooks.customCmd?.(s, f, o, pr);
+  if (custom && def.moves[custom]) return startMove(s, f, o, custom);
   if (both(BTN_LP, BTN_RP) && f.gauge >= GAUGE_MAX && !f.ultUsed) return startMove(s, f, o, 'ult');
   if (both(BTN_LP, BTN_RK) && inEmergency(f) && !f.emergencyUsed) return startMove(s, f, o, 'emerg');
   if (both(BTN_LK, BTN_RK) && f.gauge >= 1000) return startMove(s, f, o, 'ex');
@@ -474,17 +489,17 @@ function physics(s: GameState, f: Fighter, o: Fighter): void {
 
   switch (f.st) {
     case 'walkf':
-      walk = slowMul(f, CHARS[f.char].walkF);
+      walk = moveSpeed(s, f, CHARS[f.char].walkF);
       break;
     case 'walkb':
-      walk = -slowMul(f, CHARS[f.char].walkB);
+      walk = -moveSpeed(s, f, CHARS[f.char].walkB);
       break;
     case 'dash':
-      walk = slowMul(f, Math.max(20, 116 - f.sf * 6));
+      walk = moveSpeed(s, f, Math.max(20, 116 - f.sf * 6));
       if (f.sf >= f.sd) becomeIdle(f);
       break;
     case 'bdash':
-      walk = -slowMul(f, Math.max(12, 100 - f.sf * 4));
+      walk = -moveSpeed(s, f, Math.max(12, 100 - f.sf * 4));
       if (f.sf >= f.sd) becomeIdle(f);
       break;
     case 'side':
@@ -608,6 +623,7 @@ function pushApart(s: GameState): void {
   const [a, b] = s.f;
   const skip = (f: Fighter) => f.st === 'thrown' || f.st === 'throwing' || f.st === 'ult';
   if (skip(a) || skip(b)) return;
+  if (a.buffs.hidden > 0 || b.buffs.hidden > 0) return;
   if (Math.abs(a.y - b.y) > 900) return;
   const dx = b.x - a.x;
   const dz = b.z - a.z;
@@ -621,6 +637,19 @@ function pushApart(s: GameState): void {
   a.z -= idiv(nz * push, 1000);
   b.x += idiv(nx * push, 1000);
   b.z += idiv(nz * push, 1000);
+}
+
+/** 가두기: 중심에서 CAGE_R 밖으로 못 나간다 */
+function cageCheck(f: Fighter): void {
+  const b = f.buffs;
+  if (b.cage <= 0) return;
+  const dx = f.x - b.cageX;
+  const dz = f.z - b.cageZ;
+  const lim = CAGE_R - BODY_R;
+  if (dx * dx + dz * dz <= lim * lim) return;
+  const [nx, nz] = norm1000(dx, dz);
+  f.x = b.cageX + idiv(nx * lim, 1000);
+  f.z = b.cageZ + idiv(nz * lim, 1000);
 }
 
 function wallCheck(s: GameState, f: Fighter): void {
@@ -762,7 +791,15 @@ export function resolveHit(s: GameState, A: Fighter, D: Fighter, h: HitDef, c: H
     const crouchG = D.crouching;
     const blocks = crouchG ? h.lvl === 'l' : h.lvl !== 'l';
     if (blocks) {
-      setState(D, 'bs', Math.max(1, c.stunBlock ?? c.rem + h.onBlock));
+      // 저스트 가드: 가드 경직 중이 아닐 때, 직전 6F 안에 뒤를 새로 눌렀다
+      let just = false;
+      if (D.st !== 'bs') {
+        for (let i = 0; i < 6 && i + 1 < D.hist.length; i++) {
+          if ((D.hist[i] & R_B) !== 0 && (D.hist[i + 1] & R_B) === 0) just = true;
+        }
+      }
+      const red = CHARS[D.char].hooks.onGuard?.(s, D, A, just) ?? 0;
+      setState(D, 'bs', Math.max(1, (c.stunBlock ?? c.rem + h.onBlock) - red));
       D.move = null;
       D.vx = idiv(c.fx * 9, 1000);
       D.vz = idiv(c.fz * 9, 1000);
@@ -934,7 +971,7 @@ function throwingStep(s: GameState, A: Fighter, D: Fighter): void {
 
 function startCine(s: GameState, A: Fighter, D: Fighter): void {
   const def = CHARS[A.char];
-  s.cine = { owner: A.idx, char: A.char, t: 0, dur: 250, fail: false, dmg: 0 };
+  s.cine = { owner: A.idx, char: A.char, t: 0, dur: 250, fail: false, dmg: 0, v: 0 };
   def.hooks.ultDecide?.(s, A, D, s.cine);
   setState(A, 'ult');
   setState(D, 'ult');
@@ -973,11 +1010,19 @@ function endCine(s: GameState): void {
     D.combo = 1;
     becomeIdle(A);
     emit(s, { k: 'hit', who: D.idx, x: D.x, y: 1000, z: D.z, heavy: true, ch: false, dmg: c.dmg });
+    CHARS[A.char].hooks.ultAfter?.(s, A, D, c);
   }
   emit(s, { k: 'boom', x: D.x, z: D.z });
 }
 
 // ---------------------------------------------------------------- 투사체
+
+/** 설치형 벽 (트럼프 장벽, 시진핑 연산 방벽): 적 투사체를 막고 적을 밀어낸다 */
+const WALL_KINDS = new Set(['barrier', 'firewall']);
+/** 목표 지점에 시간차로 떨어지는 투사체 (김정은 미사일, 대처 이층버스) */
+const LOB_KINDS = new Set(['missile', 'bus']);
+/** 사선으로 내려오다 이 높이에서 수평 비행 (빈 살만 매) */
+const FALCON_FLOOR = 1300;
 
 function updateProjs(s: GameState): void {
   for (const p of s.projs) {
@@ -986,10 +1031,10 @@ function updateProjs(s: GameState): void {
     p.life--;
     const enemy = s.f[1 - p.owner];
     const owner = s.f[p.owner];
-    if (p.kind === 'barrier') {
+    if (WALL_KINDS.has(p.kind)) {
       // 적 투사체 차단 + 적 밀어내기
       for (const q of s.projs) {
-        if (q === p || q.done || q.owner === p.owner || q.kind === 'barrier') continue;
+        if (q === p || q.done || q.owner === p.owner || WALL_KINDS.has(q.kind)) continue;
         const dx = q.x - p.x;
         const dz = q.z - p.z;
         if (dx * dx + dz * dz < (p.radius + q.radius) * (p.radius + q.radius) && q.y < 2500) q.done = true;
@@ -1010,8 +1055,15 @@ function updateProjs(s: GameState): void {
 
     p.x += p.vx;
     p.z += p.vz;
+    if (p.vy) {
+      p.y = Math.max(0, p.y + p.vy);
+      if (p.kind === 'falcon' && p.y <= FALCON_FLOOR) {
+        p.y = FALCON_FLOOR;
+        p.vy = 0;
+      }
+    }
 
-    if (p.kind === 'missile') {
+    if (LOB_KINDS.has(p.kind)) {
       if (p.life <= 0) {
         p.done = true;
         p.x = p.tx;
@@ -1031,7 +1083,7 @@ function updateProjs(s: GameState): void {
       continue;
     }
     for (const q of s.projs) {
-      if (q === p || q.done || q.owner === p.owner || q.kind === 'barrier' || q.kind === 'missile') continue;
+      if (q === p || q.done || q.owner === p.owner || WALL_KINDS.has(q.kind) || LOB_KINDS.has(q.kind)) continue;
       const dx = q.x - p.x;
       const dz = q.z - p.z;
       if (dx * dx + dz * dz < (p.radius + q.radius) * (p.radius + q.radius)) {
@@ -1043,7 +1095,7 @@ function updateProjs(s: GameState): void {
     const dx = enemy.x - p.x;
     const dz = enemy.z - p.z;
     const r = p.radius + BODY_R;
-    if (dx * dx + dz * dz <= r * r && hittable(enemy) && !evadesLevel(enemy, p.lvl)) {
+    if (dx * dx + dz * dz <= r * r && p.y <= 2200 && hittable(enemy) && !evadesLevel(enemy, p.lvl)) {
       p.done = true;
       projHit(s, p, owner, enemy);
     }
