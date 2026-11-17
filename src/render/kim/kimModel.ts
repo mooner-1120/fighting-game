@@ -53,6 +53,7 @@ export class KimModel {
   private curLean = 0;
   private curRoll = 0;
   private flash = 0;
+  private wasHidden = false;
   private mats: THREE.MeshStandardMaterial[];
 
   /** 핵 단추 궁극기 연출을 쓰는지 (김정은만) */
@@ -121,6 +122,17 @@ export class KimModel {
       applyPose(this.rig, pose);
     }
 
+    // 잠적(장기 오프라인) 중에는 반투명
+    const hidden = f.buffs.hidden > 0;
+    if (hidden !== this.wasHidden) {
+      for (const m of this.mats) {
+        m.transparent = hidden;
+        m.opacity = hidden ? 0.25 : 1;
+        m.depthWrite = !hidden;
+        m.needsUpdate = true;
+      }
+      this.wasHidden = hidden;
+    }
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 5);
     const emerg = f.hp > 0 && f.hp * 4 <= f.maxHp ? 0.15 + 0.1 * Math.sin(time * 8) : 0;
     for (const m of this.mats) m.emissive.setRGB(this.flash + emerg, this.flash * 0.9, this.flash * 0.8);
