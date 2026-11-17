@@ -29,9 +29,8 @@ export const ULT_SPEED = 0.83;
 
 const DEG = Math.PI / 180;
 const DOWN = new THREE.Vector3(0, -1, 0);
-const LEG_RATIO = J.root[1] / 0.86; // 게임 도형 캐릭터 다리 길이 대비
 
-function dirOf(...rots: [number, number, number][]): THREE.Vector3 {
+export function dirOf(...rots: [number, number, number][]): THREE.Vector3 {
   const q = new THREE.Quaternion();
   for (const r of rots) q.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(r[0] * DEG, r[1] * DEG, r[2] * DEG)));
   return DOWN.clone().applyQuaternion(q);
@@ -62,7 +61,7 @@ export class KimModel {
     sh.rotation.x = -Math.PI / 2;
     sh.position.y = 0.01;
     this.shadow = sh;
-    applyPose(this.rig, { ...gamePoseToKim(targetPose(dummyState, dummyFighter, 0)), fist: 1 });
+    applyPose(this.rig, { ...gamePoseToKim(targetPose(dummyState, dummyFighter, 0), J.root[1] / 0.86), fist: 1 });
   }
 
   /** 이 캐릭터의 궁극기 컷신이 재생 중이면 컷신 시간(초, 연출 기준) */
@@ -104,7 +103,7 @@ export class KimModel {
       sm.dy = this.curDy;
       sm.lean = this.curLean;
       sm.roll = this.curRoll;
-      const pose = gamePoseToKim(sm);
+      const pose = gamePoseToKim(sm, J.root[1] / 0.86);
       pose.fist = f.st === 'win' || f.st === 'ko' || f.st === 'down' ? 0.4 : 1;
       applyPose(this.rig, pose);
     }
@@ -143,8 +142,9 @@ export class KimModel {
   }
 }
 
-/** 게임 포즈(관절 각도, 팔다리가 아래로 늘어진 기준) → 김정은 리그 포즈(팔다리 방향) */
-function gamePoseToKim(tp: ReturnType<typeof targetPose>): KimPose {
+/** 게임 포즈(관절 각도, 팔다리가 아래로 늘어진 기준) → 리그 포즈(팔다리 방향). 김정은·푸틴·트럼프 리그가 같은 형식을 쓴다.
+ *  legRatio: 모델 엉덩이 높이 / 게임 도형 캐릭터 엉덩이 높이(0.86) */
+export function gamePoseToKim(tp: ReturnType<typeof targetPose>, legRatio: number): KimPose {
   const j = tp.j as Record<JointName, [number, number, number]>;
   const z: [number, number, number] = [0, 0, 0];
   const g = (n: JointName) => j[n] ?? z;
@@ -155,7 +155,7 @@ function gamePoseToKim(tp: ReturnType<typeof targetPose>): KimPose {
     chest: [g('chest')[0], g('chest')[1], -g('chest')[2]],
     neck: [g('neck')[0], g('neck')[1], -g('neck')[2]],
     head: [0, 0, 0],
-    drop: tp.dy * LEG_RATIO,
+    drop: tp.dy * legRatio,
   };
   const set = (side: 'L' | 'R', key: string, v: THREE.Vector3) => {
     // kimRig는 오른쪽(R) 방향의 x를 뒤집어 쓰므로 미리 뒤집어 넘긴다
@@ -173,5 +173,5 @@ function gamePoseToKim(tp: ReturnType<typeof targetPose>): KimPose {
 }
 
 // 생성 직후 기본 자세용
-const dummyFighter = { st: 'idle', crouching: false, idx: 0, sf: 0, sd: 0, mf: 0, move: null } as unknown as Fighter;
-const dummyState = { cine: null } as unknown as GameState;
+export const dummyFighter = { st: 'idle', crouching: false, idx: 0, sf: 0, sd: 0, mf: 0, move: null } as unknown as Fighter;
+export const dummyState = { cine: null } as unknown as GameState;

@@ -4,6 +4,7 @@ import { CHARS } from '../sim/chars';
 import type { GameEvent, GameState, Proj } from '../sim/types';
 import { FighterModel, toon } from './fighterModel';
 import { KimModel, kimReady } from './kim/kimModel';
+import { StatueModel, statueReady } from './statue/statueModel';
 import { NewsOverlay } from './overlay';
 import { Stage, textTexture } from './stages';
 
@@ -22,7 +23,7 @@ export class GameView {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.1, 200);
-  fighters: (FighterModel | KimModel)[] = [];
+  fighters: (FighterModel | KimModel | StatueModel)[] = [];
   private prevUlt = [-1, -1];
   stage: Stage | null = null;
   overlay: NewsOverlay;
@@ -78,8 +79,10 @@ export class GameView {
     const same = s.cfg.chars[0] === s.cfg.chars[1];
     for (let i = 0; i < 2; i++) {
       const def = CHARS[s.cfg.chars[i]];
-      // 김정은(강태양 자리)은 리깅한 3D 모델을 쓴다
-      const fm = def.id === 'kang' && kimReady() ? new KimModel(def, same && i === 1) : new FighterModel(def, same && i === 1);
+      // 김정은·푸틴·트럼프는 리깅한 3D 모델을 쓴다 (못 읽었으면 도형 캐릭터)
+      const tint = same && i === 1;
+      const fm =
+        def.id === 'kang' && kimReady() ? new KimModel(def, tint) : statueReady(def.id) ? new StatueModel(def, tint) : new FighterModel(def, tint);
       this.fighters.push(fm);
       this.scene.add(fm.root);
       this.scene.add(fm.shadow);

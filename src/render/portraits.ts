@@ -5,6 +5,7 @@ import type { CharId } from '../sim/types';
 import { FighterModel } from './fighterModel';
 import { applyPose, POSES } from './kim/kimRig';
 import { KimModel, kimReady } from './kim/kimModel';
+import { StatueModel, statueReady } from './statue/statueModel';
 
 const cache = new Map<CharId, string>();
 const BG: Record<CharId, string> = { seo: '#173a6b', volkov: '#1f3345', rex: '#4a3608', kang: '#4a0f12' };
@@ -37,6 +38,23 @@ export function portraits(): Map<CharId, string> {
         k.rig.bones.head.getWorldPosition(hp);
         cam.position.set(0.5, hp.y + 0.05, 1.95);
         cam.lookAt(0, hp.y - 0.12, 0);
+        r.render(scene, cam);
+        cache.set(def.id, canvas.toDataURL('image/png'));
+        scene.remove(k.root);
+        k.dispose();
+        continue;
+      }
+      if (statueReady(def.id)) {
+        // 리깅한 푸틴·트럼프 조각상: 원래 차렷 자세로
+        const k = new StatueModel(def);
+        k.restPose();
+        k.root.rotation.y = -0.35;
+        scene.add(k.root);
+        k.root.updateMatrixWorld(true);
+        const hp = new THREE.Vector3();
+        k.rig.bones.head.getWorldPosition(hp);
+        cam.position.set(0.5, hp.y + 0.1, 1.95);
+        cam.lookAt(0, hp.y + 0.02, 0);
         r.render(scene, cam);
         cache.set(def.id, canvas.toDataURL('image/png'));
         scene.remove(k.root);

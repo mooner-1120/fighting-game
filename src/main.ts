@@ -3,6 +3,7 @@ import { audio } from './audio/audio';
 import { setTtsEnabled } from './audio/tts';
 import { wakeServer } from './net/server';
 import { loadKim } from './render/kim/kimModel';
+import { loadStatues } from './render/statue/statueModel';
 import { lobbyScreen } from './ui/lobby';
 import { type Nav, titleScreen } from './ui/menus';
 import { settings } from './ui/storage';
@@ -23,7 +24,7 @@ window.addEventListener('pointerdown', () => audio.ensure(), { once: true });
 window.addEventListener('keydown', () => audio.ensure(), { once: true });
 
 // 리깅한 캐릭터 모델 데이터를 먼저 읽는다 (실패하면 도형 캐릭터로 진행)
-loadKim().finally(() => {
+Promise.all([loadKim(), loadStatues()]).finally(() => {
   const room = new URLSearchParams(location.search).get('room');
   if (room) nav.lobby(room.toUpperCase());
   else nav.title();
