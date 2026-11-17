@@ -6,6 +6,8 @@ import type { CharId, Fighter, GameState } from '../../sim/types';
 import { targetPose, type JointName } from '../poses';
 import { dummyFighter, dummyState, gamePoseToKim } from '../kim/kimModel';
 import type { KimPart, KimPose, KimRig } from '../kim/kimRig';
+import { makeFalcon, makeSupercar } from '../propMeshes';
+import * as mbs from './mbsRig';
 import * as putin from './putinRig';
 import * as trump from './trumpRig';
 
@@ -19,6 +21,7 @@ interface RigModule {
 const MODELS: Partial<Record<CharId, { file: string; rig: RigModule }>> = {
   volkov: { file: './models/putin_parts.json', rig: putin },
   rex: { file: './models/trump_parts.json', rig: trump },
+  mbs: { file: './models/mbs_parts.json', rig: mbs },
 };
 const loaded = new Map<CharId, KimPart[]>();
 
@@ -66,6 +69,9 @@ export class StatueModel {
   private scraps: Scrap[] = [];
   private club: THREE.Group;
   private mic: THREE.Mesh;
+  /** 기술(anim)마다 보이는 소품. untilProj: 투사체를 던진 뒤엔 사라짐, upright: 몸 기준으로 똑바로 */
+  private animProps: { obj: THREE.Object3D; anims: string[]; untilProj: boolean; upright: boolean }[] = [];
+  private ghost = 1;
 
   constructor(public def: CharDef, tint = false) {
     const parts = loaded.get(def.id);
@@ -105,6 +111,24 @@ export class StatueModel {
     this.mic.visible = false;
     hand.add(this.mic);
 
+    // 빈 살만: 슈퍼카(몸 아래), 왼팔에 앉은 매
+    if (def.id === 'mbs') {
+      const mk = (c: number, extra: THREE.MeshToonMaterialParameters = {}) => new THREE.MeshToonMaterial({ color: c, ...extra });
+      const car = makeSupercar(mk);
+      car.position.set(0, 0, 0.15);
+      car.visible = false;
+      this.rig.bones.root.parent!.add(car);
+      this.animProps.push({ obj: car, anims: ['car'], untilProj: false, upright: false });
+      const anchor = new THREE.Group();
+      const bird = makeFalcon(mk);
+      bird.position.set(0, 0.05, 0);
+      anchor.add(bird);
+      anchor.visible = false;
+      anchor.position.copy(new THREE.Vector3(...J.L_kn).sub(new THREE.Vector3(...J.L_wr)).multiplyScalar(0.5));
+      this.rig.bones.L_hand.add(anchor);
+      this.animProps.push({ obj: anchor, anims: ['falcon'], untilProj: true, upright: true });
+    }
+
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
     sh.rotation.x = -Math.PI / 2;
     sh.position.y = 0.01;
@@ -112,9 +136,10 @@ export class StatueModel {
     this.mod.applyPose(this.rig, gamePoseToKim(targetPose(dummyState, dummyFighter, 0), this.legRatio));
   }
 
-  /** 초상화용: 팔을 내린 차렷 자세 */
+  /** 초상화용: 팔을 내린 차렷 자세 (T자 자세 모델도 팔을 내린다) */
   restPose() {
-    this.mod.applyPose(this.rig, { drop: 0 });
+    const down: [number, number, number] = [0.12, -1, 0.04];
+    this.mod.applyPose(this.rig, { drop: 0, fist: 0.35, L_upper: down, L_fore: [0.06, -1, 0.1], R_upper: down, R_fore: [0.06, -1, 0.1] });
   }
 
   update(s: GameState, f: Fighter, dt: number, time: number) {
@@ -146,6 +171,25 @@ export class StatueModel {
     // 소품
     const anim = f.st === 'atk' && f.move ? this.def.moves[f.move]?.anim : '';
     this.club.visible = anim === 'golf';
+    const mv = f.st === 'atk' && f.move ? this.def.moves[f.move] : undefined;
+    let uprightDirty = false;
+    for (const p of this.animProps) {
+      let v = !!anim && p.anims.includes(anim);
+      if (v && p.untilProj && mv?.proj && f.mf >= mv.proj.f) v = false;
+      p.obj.visible = v;
+      if (v && p.upright) uprightDirty = true;
+    }
+    if (uprightDirty) {
+      this.root.updateMatrixWorld(true);
+      const q = new THREE.Quaternion();
+      for (const p of this.animProps) {
+        if (!p.upright || !p.obj.visible) continue;
+        p.obj.parent!.getWorldQuaternion(q);
+        p.obj.quaternion.copy(q.invert().multiply(this.root.quaternion));
+      }
+    }
+    // 모래폭풍 대시 등 통과 상태는 반투명
+    this.setGhost(f.buffs.hidden > 0 ? 0.5 : 1);
     this.mic.visible = f.st === 'ult' && s.cine?.owner === f.idx;
 
     // 웃통 벗기 (푸틴 아머): 맨살로 바꾸고, 벗는 순간 재킷·셔츠 조각이 찢어져 날아간다
@@ -205,6 +249,17 @@ export class StatueModel {
       (p.m.material as THREE.Material).dispose();
       return false;
     });
+  }
+
+  private setGhost(a: number) {
+    if (a === this.ghost) return;
+    this.ghost = a;
+    for (const m of this.mats) {
+      m.transparent = a < 1;
+      m.opacity = a;
+      m.depthWrite = a >= 1;
+      m.needsUpdate = true;
+    }
   }
 
   hitFlash() {

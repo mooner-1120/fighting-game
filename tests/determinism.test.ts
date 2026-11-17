@@ -349,7 +349,7 @@ console.log('새 캐릭터 테스트');
   s.f[0].x = 3600;
   s.f[1].x = 4940;
   s.f[0].z = s.f[1].z = 0;
-  run(s, seq(QCF(BTN_RP), idle(40)));
+  run(s, [...QCF(BTN_RP), ...idle(40)]);
   ok(s.projs.some((p) => p.kind === 'firewall') && Math.abs(s.f[1].x) <= lim, `방벽에 밀려도 경기장 안 (x ${s.f[1].x})`);
   const s2 = createState(cfg('xi', 'volkov', 7, false));
   fight(s2);
