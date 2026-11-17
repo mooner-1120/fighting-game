@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { CHARS } from '../sim/chars';
 import type { GameEvent, GameState, Proj } from '../sim/types';
 import { FighterModel, toon } from './fighterModel';
+import { KimModel, kimReady } from './kim/kimModel';
 import { NewsOverlay } from './overlay';
 import { Stage, textTexture } from './stages';
 
@@ -21,7 +22,8 @@ export class GameView {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(40, 16 / 9, 0.1, 200);
-  fighters: FighterModel[] = [];
+  fighters: (FighterModel | KimModel)[] = [];
+  private prevUlt = [-1, -1];
   stage: Stage | null = null;
   overlay: NewsOverlay;
   private projMeshes = new Map<number, THREE.Object3D>();
@@ -75,7 +77,9 @@ export class GameView {
     this.sun.color.setHex(this.stage.lightColor);
     const same = s.cfg.chars[0] === s.cfg.chars[1];
     for (let i = 0; i < 2; i++) {
-      const fm = new FighterModel(CHARS[s.cfg.chars[i]], same && i === 1);
+      const def = CHARS[s.cfg.chars[i]];
+      // 김정은(강태양 자리)은 리깅한 3D 모델을 쓴다
+      const fm = def.id === 'kang' && kimReady() ? new KimModel(def, same && i === 1) : new FighterModel(def, same && i === 1);
       this.fighters.push(fm);
       this.scene.add(fm.root);
       this.scene.add(fm.shadow);
@@ -233,6 +237,8 @@ export class GameView {
       sign.position.set(dx, 3.2, dz);
       sign.name = 'tariff';
       g.add(sign);
+    } else if (A.char === 'kang' && this.fighters[who] instanceof KimModel) {
+      // 모델 자체가 단추·탄두·폭발 연출을 한다 (kimUlt)
     } else if (A.char === 'kang') {
       const btnBase = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.4, 0.2, 20), toon(0x333333));
       btnBase.position.set(ax + A.fx / 1000 * 0.5, 1.0, az + A.fz / 1000 * 0.5);
@@ -451,6 +457,14 @@ export class GameView {
     const height = Math.max(a.y, b.y) / 1000;
     const pos = new THREE.Vector3(mid.x - ix * back, 1.55 + back * 0.08 + height * 0.3, mid.z - iz * back);
     const look = new THREE.Vector3(mid.x, 1.05 + height * 0.4, mid.z);
+    const kim = s.cine ? this.fighters[s.cine.owner] : null;
+    if (s.cine && kim instanceof KimModel) {
+      const ut = kim.ultTime(s, s.f[s.cine.owner]);
+      if (ut !== null) {
+        const [cp, cl] = kim.ultCameraWorld(ut);
+        return [cp, cl];
+      }
+    }
     if (s.cine) {
       const A = s.f[s.cine.owner];
       const D = s.f[1 - s.cine.owner];
@@ -489,7 +503,20 @@ export class GameView {
       this.lastRound = s.round;
       this.snapCamera(s);
     }
-    for (let i = 0; i < this.fighters.length; i++) this.fighters[i].update(s, s.f[i], dt, this.time);
+    for (let i = 0; i < this.fighters.length; i++) {
+      const fm = this.fighters[i];
+      fm.update(s, s.f[i], dt, this.time);
+      // 김정은 배치기 착지 순간: 흙먼지 + 화면 흔들림
+      if (fm instanceof KimModel) {
+        const ut = fm.ultTime(s, s.f[i]) ?? -1;
+        if (this.prevUlt[i] < 3.0 && ut >= 3.0) {
+          fm.root.updateMatrixWorld(true);
+          this.explosion(fm.root.localToWorld(new THREE.Vector3(0, 0.3, 0.4)));
+          this.shake = 0.9;
+        }
+        this.prevUlt[i] = ut;
+      }
+    }
     this.updateProjs(s);
     this.updateUltFx(s, dt);
     this.stage?.update(dt, this.time);
@@ -511,7 +538,8 @@ export class GameView {
     });
 
     const [tp, tl] = this.camTarget(s);
-    const k = s.cine ? 1 - Math.exp(-dt * 6) : 1 - Math.exp(-dt * 8);
+    const kimCine = s.cine && this.fighters[s.cine.owner] instanceof KimModel;
+    const k = kimCine ? 1 : s.cine ? 1 - Math.exp(-dt * 6) : 1 - Math.exp(-dt * 8);
     this.camPos.lerp(tp, k);
     this.camLook.lerp(tl, k);
     this.shake = Math.max(0, this.shake - dt);

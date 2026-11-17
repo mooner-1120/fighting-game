@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { CHAR_LIST } from '../sim/chars';
 import type { CharId } from '../sim/types';
 import { FighterModel } from './fighterModel';
+import { applyPose, POSES } from './kim/kimRig';
+import { KimModel, kimReady } from './kim/kimModel';
 
 const cache = new Map<CharId, string>();
 const BG: Record<CharId, string> = { seo: '#173a6b', volkov: '#1f3345', rex: '#4a3608', kang: '#4a0f12' };
@@ -23,6 +25,24 @@ export function portraits(): Map<CharId, string> {
     scene.add(d);
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
     for (const def of CHAR_LIST) {
+      scene.background = new THREE.Color(BG[def.id]);
+      if (def.id === 'kang' && kimReady()) {
+        // 리깅한 김정은 모델: 팔을 내린 차렷 자세로
+        const k = new KimModel(def);
+        applyPose(k.rig, { ...POSES.guard, root: [0, 0, 0], spine: [0, 0, 0], chest: [0, 0, 0], neck: [0, 0, 0], drop: 0, fist: 0.3, L_upper: [0.18, -1, 0.05], L_fore: [0.08, -1, 0.12], R_upper: [0.18, -1, 0.05], R_fore: [0.08, -1, 0.12] });
+        k.root.rotation.y = -0.35;
+        scene.add(k.root);
+        k.root.updateMatrixWorld(true);
+        const hp = new THREE.Vector3();
+        k.rig.bones.head.getWorldPosition(hp);
+        cam.position.set(0.5, hp.y + 0.05, 1.95);
+        cam.lookAt(0, hp.y - 0.12, 0);
+        r.render(scene, cam);
+        cache.set(def.id, canvas.toDataURL('image/png'));
+        scene.remove(k.root);
+        k.dispose();
+        continue;
+      }
       const m = new FighterModel(def);
       // 정면, 가드 자세 대신 차렷 + 살짝 비틀기
       m.root.rotation.y = -0.35;
@@ -30,7 +50,6 @@ export function portraits(): Map<CharId, string> {
         if (n === 'lSh' || n === 'rSh') g.rotation.set(-0.2, 0, n === 'lSh' ? 0.25 : -0.25);
       }
       scene.add(m.root);
-      scene.background = new THREE.Color(BG[def.id]);
       m.root.updateMatrixWorld(true);
       // 머리 높이 근사
       const head = new THREE.Vector3(0, 1.75 * def.look.height + 0.05, 0);
