@@ -221,6 +221,24 @@ export function buildFace(head: THREE.Group, face: NonNullable<CharLook['face']>
       smile.position.set(0, my, hd.z(0, my - R * 0.12) + R * 0.005);
       smile.rotation.z = Math.PI + Math.PI * 0.1;
       head.add(smile);
+      // 안경: 얇은 테 + 코받침 다리 + 귀까지 이어지는 다리
+      {
+        const gm = mk(0x2b2b30);
+        const ey = R * 0.17;
+        for (const sx of [-1, 1]) {
+          const x = sx * R * 0.3;
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(R * 0.165, R * 0.018, 6, 20), gm);
+          rim.position.set(x, ey, hd.z(x, ey) + R * 0.05);
+          rim.rotation.y = yawAt(hd, x);
+          rim.scale.set(1.1, 0.85, 1);
+          head.add(rim);
+          const ex = sx * R * 0.48;
+          const ez = hd.z(ex, ey);
+          const len = R * 0.75;
+          bar(head, R * 0.025, R * 0.025, len, gm, [sx * R * 0.6, ey, ez - len / 2 + R * 0.05], 0, 0, sx * -0.25);
+        }
+        bar(head, R * 0.24, R * 0.022, R * 0.022, gm, [0, ey + R * 0.03, hd.z(0, ey) + R * 0.06]);
+      }
       // 짧은 머리: 윗 캡 + 옆·뒤
       hd.shell(hairMat, 1.05, 0, Math.PI * 2, 0, 0.95);
       const [ps, pl] = sidesBack(1.15);
