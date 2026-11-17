@@ -43,6 +43,9 @@ export interface CharLook {
   height: number;
   glasses?: boolean;
   medals?: boolean;
+  face?: 'putin' | 'trump' | 'kim' | 'lee'; // 인물별 캐리커처 얼굴
+  collar?: 'tie' | 'mao'; // mao: 넥타이 없는 인민복 칼라
+  pin?: 'us' | 'kr' | 'red'; // 옷깃 배지
   accent: number;
 }
 

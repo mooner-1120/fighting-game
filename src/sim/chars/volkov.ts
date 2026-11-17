@@ -97,8 +97,9 @@ export const volkov: CharDef = {
     { name: '해머 바운드', inputs: '←LP → LP, RP', seq: ['41', '51', '12'] },
   ],
   look: {
-    skin: 0xf1c7a5, suit: 0x2b3a55, shirt: 0xf3f3f3, tie: 0x8a1c1c, pants: 0x22252e,
-    hair: 0xc9a46a, hairStyle: 'bald', headScale: 1.0, bodyW: 1.28, belly: 0.95, height: 1.0, accent: 0x6aa9ff,
+    skin: 0xf0c8a8, suit: 0x232a38, shirt: 0xf3f3f3, tie: 0x6e1f2a, pants: 0x1d2230,
+    hair: 0xbfa27f, hairStyle: 'bald', headScale: 0.95, bodyW: 1.08, belly: 0.9, height: 0.97, accent: 0x6aa9ff,
+    face: 'putin', collar: 'tie',
   },
   theme: { root: 45, scale: [0, 2, 3, 5, 7, 8, 10], tempo: 112 },
 };

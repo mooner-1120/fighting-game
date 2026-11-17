@@ -111,8 +111,9 @@ export const rex: CharDef = {
     { name: '골든 스윙 콤보', inputs: '↓↘→RP → LP, RP', seq: ['qcf2', '51', '12'] },
   ],
   look: {
-    skin: 0xf0a868, suit: 0x1d2b4f, shirt: 0xffffff, tie: 0xd11f1f, pants: 0x1d2b4f,
-    hair: 0xf4d35e, hairStyle: 'swoop', headScale: 1.0, bodyW: 1.2, belly: 1.4, height: 1.02, accent: 0xffd23f,
+    skin: 0xf0a060, suit: 0x1b2847, shirt: 0xffffff, tie: 0xd11f1f, pants: 0x1b2847,
+    hair: 0xf2c94c, hairStyle: 'swoop', headScale: 1.02, bodyW: 1.25, belly: 1.45, height: 1.06, accent: 0xffd23f,
+    face: 'trump', collar: 'tie', pin: 'us',
   },
   theme: { root: 48, scale: [0, 2, 4, 5, 7, 9, 11], tempo: 124 },
 };

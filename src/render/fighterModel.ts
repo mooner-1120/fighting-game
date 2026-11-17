@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import type { CharDef } from '../sim/chardef';
 import type { Fighter, GameState } from '../sim/types';
+import { buildFace } from './heads';
 import { type JointName, targetPose } from './poses';
 
 const DEG = Math.PI / 180;
@@ -73,8 +74,8 @@ export class FighterModel {
     this.def = def;
     const L = def.look;
     const H = L.height;
-    const mk = (c: number) => {
-      const m = toon(tint ? new THREE.Color(c).lerp(new THREE.Color(0x888888), 0.35).getHex() : c);
+    const mk = (c: number, extra: THREE.MeshToonMaterialParameters = {}) => {
+      const m = toon(tint ? new THREE.Color(c).lerp(new THREE.Color(0x888888), 0.35).getHex() : c, extra);
       this.mats.push(m);
       return m;
     };
@@ -137,12 +138,65 @@ export class FighterModel {
       chest.add(pec);
       this.bareChest.push(pec);
     }
-    // 셔츠 V + 넥타이
-    const collar = box(0.16, 0.2, 0.02, shirt, false);
-    collar.position.set(0, 0.16, 0.155);
-    chest.add(collar);
-    this.jacket.push(collar);
-    if (L.tie) {
+    // 셔츠 V + 넥타이 (인민복은 목까지 채운 칼라)
+    if (L.collar === 'mao') {
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.11, 0.07, 14), suit);
+      band.position.set(0, 0.27, 0.0);
+      chest.add(band);
+      this.jacket.push(band);
+      const seam = box(0.012, 0.36, 0.01, mk(0x0a0a0a), false);
+      seam.position.set(0, 0.08, 0.152);
+      chest.add(seam);
+      this.jacket.push(seam);
+      for (let i = 0; i < 5; i++) {
+        const b = sphere(0.014, mk(0x55555a), false, 6);
+        b.position.set(0.015, 0.22 - i * 0.075, 0.158);
+        chest.add(b);
+        this.jacket.push(b);
+      }
+      for (const sx of [-1, 1]) {
+        const pocket = box(0.11, 0.06, 0.012, suit, false);
+        pocket.position.set(sx * 0.13 * L.bodyW, 0.15, 0.155);
+        chest.add(pocket);
+        this.jacket.push(pocket);
+      }
+    } else {
+      const collar = box(0.16, 0.2, 0.02, shirt, false);
+      collar.position.set(0, 0.16, 0.155);
+      chest.add(collar);
+      this.jacket.push(collar);
+      // 재킷 옷깃 (V자)
+      const lapelMat = mk(new THREE.Color(L.suit).multiplyScalar(0.75).getHex());
+      for (const sx of [-1, 1]) {
+        const lapel = box(0.07, 0.3, 0.018, lapelMat, false);
+        lapel.position.set(sx * 0.1, 0.12, 0.162);
+        lapel.rotation.z = sx * 0.32;
+        chest.add(lapel);
+        this.jacket.push(lapel);
+      }
+    }
+    if (L.pin) {
+      const pinG = new THREE.Group();
+      pinG.position.set(0.15 * L.bodyW, 0.2, 0.17);
+      if (L.pin === 'us') {
+        const a = box(0.035, 0.024, 0.008, mk(0xc62828), false);
+        const b2 = box(0.016, 0.012, 0.01, mk(0x1a3a8a), false);
+        b2.position.set(-0.01, 0.006, 0.002);
+        pinG.add(a, b2);
+      } else if (L.pin === 'kr') {
+        const c = new THREE.Mesh(new THREE.CircleGeometry(0.016, 14), mk(0xffffff));
+        const top = new THREE.Mesh(new THREE.CircleGeometry(0.011, 12, 0, Math.PI), mk(0xd32f2f));
+        const bot = new THREE.Mesh(new THREE.CircleGeometry(0.011, 12, Math.PI, Math.PI), mk(0x1a4fa8));
+        top.position.z = bot.position.z = 0.002;
+        pinG.add(c, top, bot);
+      } else {
+        const r = box(0.03, 0.04, 0.008, mk(0xd32f2f), false);
+        pinG.add(r);
+      }
+      chest.add(pinG);
+      this.jacket.push(pinG);
+    }
+    if (L.tie && L.collar !== 'mao') {
       const tieMat = mk(L.tie);
       const tieLen = def.id === 'rex' ? 0.62 : 0.4;
       const tie = box(0.07, tieLen, 0.02, tieMat, false);
@@ -174,7 +228,10 @@ export class FighterModel {
     const head = new THREE.Group();
     head.position.y = 0.26 * L.headScale;
     neck.add(head);
-    this.buildHead(head, L, skin, hair, black, white, mk);
+    if (L.face) {
+      buildFace(head, L.face, L, skin, mk);
+      this.props.head = head;
+    } else this.buildHead(head, L, skin, hair, black, white, mk);
 
     // 팔
     for (const side of ['l', 'r'] as const) {

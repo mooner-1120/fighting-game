@@ -111,8 +111,9 @@ export const kang: CharDef = {
     { name: '니킥 콤보', inputs: '↗RK → LP, RP', seq: ['94', '51', '12'] },
   ],
   look: {
-    skin: 0xf0cfa8, suit: 0x202020, shirt: 0x202020, tie: 0, pants: 0x202020,
-    hair: 0x111111, hairStyle: 'fade', headScale: 1.12, bodyW: 1.15, belly: 1.35, height: 0.96, medals: true, accent: 0xd62828,
+    skin: 0xf2d3b0, suit: 0x1c1c1e, shirt: 0x1c1c1e, tie: 0, pants: 0x1c1c1e,
+    hair: 0x101010, hairStyle: 'fade', headScale: 1.12, bodyW: 1.2, belly: 1.4, height: 0.93, accent: 0xd62828,
+    face: 'kim', collar: 'mao', pin: 'red',
   },
   theme: { root: 43, scale: [0, 2, 4, 5, 7, 9, 10], tempo: 104 },
 };

@@ -97,8 +97,9 @@ export const seo: CharDef = {
     { name: '서류 바운드', inputs: '↓↘→RP → LP, RP', seq: ['qcf2', '51', '12'] },
   ],
   look: {
-    skin: 0xf3d2b3, suit: 0x2f5d9b, shirt: 0xffffff, tie: 0x3b7dd8, pants: 0x2a3d5c,
-    hair: 0x2a2a2a, hairStyle: 'neat', headScale: 1.0, bodyW: 1.0, belly: 1.0, height: 1.0, glasses: true, accent: 0x4fc3f7,
+    skin: 0xeec9a8, suit: 0x1f2f4f, shirt: 0xffffff, tie: 0x1f6fd1, pants: 0x1f2f4f,
+    hair: 0x2b2b2e, hairStyle: 'neat', headScale: 1.0, bodyW: 1.0, belly: 1.0, height: 1.0, accent: 0x4fc3f7,
+    face: 'lee', collar: 'tie', pin: 'kr',
   },
   theme: { root: 50, scale: [0, 2, 4, 7, 9], tempo: 132 },
 };
