@@ -18,8 +18,8 @@ export const R_D = 2; // 아래 (앉기)
 export const R_B = 4; // 뒤
 export const R_F = 8; // 앞
 
-export type CharId = 'volkov' | 'rex' | 'kang' | 'seo';
-export const CHAR_IDS: CharId[] = ['volkov', 'rex', 'kang', 'seo'];
+export type CharId = 'volkov' | 'rex' | 'kang' | 'seo' | 'thatcher' | 'xi' | 'mbs' | 'macron';
+export const CHAR_IDS: CharId[] = ['volkov', 'rex', 'kang', 'seo', 'thatcher', 'xi', 'mbs', 'macron'];
 
 export type HitLevel = 'h' | 'm' | 'l';
 

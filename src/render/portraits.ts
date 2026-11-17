@@ -8,7 +8,10 @@ import { KimModel, kimReady } from './kim/kimModel';
 import { StatueModel, statueReady } from './statue/statueModel';
 
 const cache = new Map<CharId, string>();
-const BG: Record<CharId, string> = { seo: '#173a6b', volkov: '#1f3345', rex: '#4a3608', kang: '#4a0f12' };
+const BG: Record<CharId, string> = {
+  seo: '#173a6b', volkov: '#1f3345', rex: '#4a3608', kang: '#4a0f12',
+  thatcher: '#1d2f5c', xi: '#5a0f0f', mbs: '#0f4a2c', macron: '#24306b',
+};
 
 export function portraits(): Map<CharId, string> {
   if (cache.size) return cache;

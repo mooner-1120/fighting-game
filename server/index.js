@@ -12,7 +12,7 @@ import { WebSocketServer } from 'ws';
 const PORT = Number(process.env.PORT) || 8787;
 const MAX_PLAYERS = 8;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const CHARS = ['seo', 'volkov', 'rex', 'kang'];
+const CHARS = ['seo', 'volkov', 'rex', 'kang', 'thatcher', 'xi', 'mbs', 'macron'];
 const STAGE_COUNT = 6;
 
 // 서버가 제공하는 게임 빌드 ID. 브라우저 버전이 다르면 시뮬레이션이 어긋나므로 입장을 막고 새로고침시킨다
