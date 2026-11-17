@@ -6,7 +6,8 @@ import type { CharId, Fighter, GameState } from '../../sim/types';
 import { targetPose, type JointName } from '../poses';
 import { dummyFighter, dummyState, gamePoseToKim } from '../kim/kimModel';
 import type { KimPart, KimPose, KimRig } from '../kim/kimRig';
-import { makeFalcon, makeHandbag, makeSupercar, makeTeacup, makeUmbrella } from '../propMeshes';
+import { makeBaguette, makeFalcon, makeHandbag, makeRapier, makeSupercar, makeTeacup, makeUmbrella, makeWineGlass } from '../propMeshes';
+import * as macron from './macronRig';
 import * as mbs from './mbsRig';
 import * as putin from './putinRig';
 import * as thatcher from './thatcherRig';
@@ -24,13 +25,15 @@ const MODELS: Partial<Record<CharId, { file: string; rig: RigModule }>> = {
   rex: { file: './models/trump_parts.json', rig: trump },
   mbs: { file: './models/mbs_parts.json', rig: mbs },
   thatcher: { file: './models/thatcher_parts.json', rig: thatcher },
+  macron: { file: './models/macron_parts.json', rig: macron },
 };
 const loaded = new Map<CharId, KimPart[]>();
 
 /** 모델 데이터를 미리 읽어 둔다 (실패한 캐릭터는 기존 도형 캐릭터를 쓴다) */
 export async function loadStatues(): Promise<void> {
-  await Promise.all(
-    Object.entries(MODELS).map(async ([id, m]) => {
+  await Promise.all([
+    macron.preloadHeadTexture(),
+    ...    Object.entries(MODELS).map(async ([id, m]) => {
       try {
         const res = await fetch(m!.file);
         if (!res.ok) return;
@@ -39,7 +42,7 @@ export async function loadStatues(): Promise<void> {
         /* 도형 캐릭터로 대신한다 */
       }
     }),
-  );
+  ]);
 }
 
 export function statueReady(id: CharId): boolean {
@@ -153,6 +156,30 @@ export class StatueModel {
       upright(makeTeacup(mk), ['tea'], 0.85);
       upright(makeHandbag(mk), ['question'], 1.6);
       this.ultUmbrella = true;
+    }
+    // 마크롱: 레이피어(궁극기에도 듦), 바게트(던지면 사라짐), 와인 잔 — 오른손
+    if (def.id === 'macron') {
+      const mk = (c: number, extra: THREE.MeshToonMaterialParameters = {}) => new THREE.MeshToonMaterial({ color: c, ...extra });
+      const rap = makeRapier(mk);
+      rap.position.copy(palm);
+      rap.visible = false;
+      hand.add(rap);
+      this.animProps.push({ obj: rap, anims: ['rapier', 'ult'], untilProj: false, upright: false });
+      const bread = makeBaguette(mk);
+      bread.rotation.x = Math.PI / 2;
+      bread.position.copy(palm).add(new THREE.Vector3(0, 0, 0.05));
+      bread.visible = false;
+      hand.add(bread);
+      this.animProps.push({ obj: bread, anims: ['throwBread'], untilProj: true, upright: false });
+      const a = new THREE.Group();
+      const wine = makeWineGlass(mk);
+      wine.position.set(0, -0.06, 0.03);
+      a.add(wine);
+      a.position.copy(palm);
+      a.visible = false;
+      hand.add(a);
+      this.animProps.push({ obj: a, anims: ['toast'], untilProj: false, upright: true });
+      this.ultUmbrella = true; // 확성기 대신 레이피어
     }
 
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
