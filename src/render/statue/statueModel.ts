@@ -7,6 +7,7 @@ import { targetPose, type JointName } from '../poses';
 import { dummyFighter, dummyState, gamePoseToKim } from '../kim/kimModel';
 import type { KimPart, KimPose, KimRig } from '../kim/kimRig';
 import { makeBaguette, makeFalcon, makeHandbag, makeRapier, makeSupercar, makeTeacup, makeUmbrella, makeWineGlass } from '../propMeshes';
+import * as lee from './leeRig';
 import * as macron from './macronRig';
 import * as mbs from './mbsRig';
 import * as putin from './putinRig';
@@ -26,6 +27,7 @@ const MODELS: Partial<Record<CharId, { file: string; rig: RigModule }>> = {
   mbs: { file: './models/mbs_parts.json', rig: mbs },
   thatcher: { file: './models/thatcher_parts.json', rig: thatcher },
   macron: { file: './models/macron_parts.json', rig: macron },
+  seo: { file: './models/lee_parts.json', rig: lee },
 };
 const loaded = new Map<CharId, KimPart[]>();
 
@@ -33,6 +35,7 @@ const loaded = new Map<CharId, KimPart[]>();
 export async function loadStatues(): Promise<void> {
   await Promise.all([
     macron.preloadHeadTexture(),
+    lee.preloadHeadTexture(),
     ...    Object.entries(MODELS).map(async ([id, m]) => {
       try {
         const res = await fetch(m!.file);
@@ -156,6 +159,19 @@ export class StatueModel {
       upright(makeTeacup(mk), ['tea'], 0.85);
       upright(makeHandbag(mk), ['question'], 1.6);
       this.ultUmbrella = true;
+    }
+    // 이재명: 서류(서류 내리치기), 휴대폰(긴급 브리핑) — 오른손
+    if (def.id === 'seo') {
+      const paper = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.02, 0.4), new THREE.MeshStandardMaterial({ color: 0xf8f8f0, roughness: 0.9 }));
+      paper.position.copy(palm).add(new THREE.Vector3(0, -0.02, 0.1));
+      paper.visible = false;
+      hand.add(paper);
+      this.animProps.push({ obj: paper, anims: ['slam'], untilProj: false, upright: false });
+      const phone = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.15, 0.015), new THREE.MeshStandardMaterial({ color: 0x111133, roughness: 0.3 }));
+      phone.position.copy(palm).add(new THREE.Vector3(0, 0, 0.04));
+      phone.visible = false;
+      hand.add(phone);
+      this.animProps.push({ obj: phone, anims: ['phone'], untilProj: false, upright: false });
     }
     // 마크롱: 레이피어(궁극기에도 듦), 바게트(던지면 사라짐), 와인 잔 — 오른손
     if (def.id === 'macron') {

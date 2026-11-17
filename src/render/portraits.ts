@@ -57,7 +57,7 @@ export function portraits(): Map<CharId, string> {
         const hp = new THREE.Vector3();
         k.rig.bones.head.getWorldPosition(hp);
         // 빈 살만은 구트라가 머리 위로 높아서 조금 더 가까이
-        const near = def.id === 'mbs' || def.id === 'thatcher' ? 1.6 : 1.95;
+        const near = def.id === 'mbs' || def.id === 'thatcher' || def.id === 'macron' || def.id === 'seo' ? 1.6 : 1.95;
         cam.position.set(0.5, hp.y + 0.1, near);
         cam.lookAt(0, hp.y + (def.id === 'mbs' ? 0.0 : 0.02), 0);
         r.render(scene, cam);
