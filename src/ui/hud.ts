@@ -101,7 +101,9 @@ export class Hud {
       if (f.buffs.atkUp > 0) b.push('<span class="buff good">공격력 +15%</span>');
       if (f.buffs.tariff > 0) b.push(`<span class="buff bad">관세 25% (${Math.ceil(f.buffs.tariff / 60)})</span>`);
       if (f.buffs.slow > 0) b.push(`<span class="buff bad">이동 -50% (${Math.ceil(f.buffs.slow / 60)})</span>`);
-      if (f.buffs.briefing > 0) b.push('<span class="buff good">브리핑</span>');
+      if (f.buffs.briefing > 0) b.push(`<span class="buff good">${f.char === 'xi' ? '감시망' : '브리핑'}</span>`);
+      if (f.buffs.cage > 0) b.push(`<span class="buff bad">갇힘 (${Math.ceil(f.buffs.cage / 60)})</span>`);
+      if (f.buffs.hidden > 0 && f.char === 'xi') b.push('<span class="buff good">잠적</span>');
       if (f.spoke) b.push('<span class="buff">스포크스맨</span>');
       this.set(`b${i}`, el.buffs, 'html', b.join(''));
       // 게이지
@@ -126,6 +128,20 @@ export class Hud {
           break;
         case 'seo':
           r = `지지율 ${f.res[0]}%`;
+          break;
+        case 'thatcher':
+          if (f.move === 'tea') r = '티타임 ☕ 마시는 중…';
+          else if (f.res[1] > 0) r = `티타임 ☕ ${Math.ceil(f.res[1] / 60)}초! (↓+LP+RP)`;
+          else r = `티타임까지 ${Math.ceil(f.res[0] / 60)}초`;
+          break;
+        case 'xi':
+          r = f.buffs.briefing > 0 ? `감시망 가동 (${Math.ceil(f.buffs.briefing / 60)}초)` : `감시망 ${f.res[0]}%`;
+          break;
+        case 'mbs':
+          r = `유가 $${40 + f.res[0]} ${f.res[2] ? '▲' : '▼'}`;
+          break;
+        case 'macron':
+          r = `우아함 ${f.res[0]}%`;
           break;
       }
       if (f.ultUsed) r += ' · 궁극기 사용함';

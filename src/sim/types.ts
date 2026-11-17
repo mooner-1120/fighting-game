@@ -114,6 +114,12 @@ export interface Buffs {
   slow: number;
   tariff: number;
   briefing: number;
+  /** 잠적·통과 상태 남은 프레임 (시진핑 장기 오프라인, 빈 살만 모래폭풍 대시). >0 이면 몸 충돌 없음 */
+  hidden: number;
+  /** 가두기 남은 프레임 (시진핑 궁극기). >0 이면 (cageX, cageZ) 중심 반지름 CAGE_R 안에서만 움직인다 */
+  cage: number;
+  cageX: number;
+  cageZ: number;
 }
 
 export interface Fighter {
@@ -192,6 +198,8 @@ export interface Cine {
   dur: number;
   fail: boolean;
   dmg: number;
+  /** 궁극기 연출 진행 값 (캐릭터별 뜻이 다름, hooks.ultTick 이 갱신). docs/new-characters.md 「렌더 연결」 참고 */
+  v: number;
 }
 
 export type GameEvent =
@@ -215,7 +223,9 @@ export type GameEvent =
   | { k: 'boom'; x: number; z: number }
   | { k: 'heal'; who: number; amt: number }
   | { k: 'special'; who: number; name: string }
-  | { k: 'counter'; who: number };
+  | { k: 'counter'; who: number }
+  | { k: 'justGuard'; who: number }
+  | { k: 'teaTime'; who: number };
 
 export interface MatchConfig {
   chars: [CharId, CharId];
@@ -251,3 +261,9 @@ export interface GameState {
 export const FRAME_RATE = 60;
 export const ARENA = 5200; // 경기장 반지름(정사각형 반 변) mm
 export const BODY_R = 260;
+/** 가두기(시진핑 궁극기) 반지름 mm */
+export const CAGE_R = 1600;
+
+export function emptyBuffs(): Buffs {
+  return { armor: 0, atkUp: 0, slow: 0, tariff: 0, briefing: 0, hidden: 0, cage: 0, cageX: 0, cageZ: 0 };
+}
