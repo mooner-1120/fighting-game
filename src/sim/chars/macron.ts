@@ -113,9 +113,9 @@ export const macron: CharDef = {
     { name: '띄우기 찌르기', inputs: '↘RP → ↓↘→LP → LP', seq: ['32', 'qcf1', 'qcf1b'] },
   ],
   look: {
-    skin: 0xf1d2b6, suit: 0x1b2440, shirt: 0xffffff, tie: 0x1b2440, pants: 0x1b2440,
-    hair: 0x5a4632, hairStyle: 'neat', headScale: 0.98, bodyW: 0.95, belly: 0.9, height: 1.0, accent: 0x6f8cff,
-    collar: 'tie',
+    skin: 0xf2d3b8, suit: 0x1a2342, shirt: 0xffffff, tie: 0x0f1630, pants: 0x1a2342,
+    hair: 0x6a4e34, hairStyle: 'neat', headScale: 0.98, bodyW: 0.9, belly: 0.82, height: 1.0, accent: 0x6f8cff,
+    face: 'macron', collar: 'tie',
   },
   theme: { root: 53, scale: [0, 2, 4, 5, 7, 9, 11], tempo: 124 },
 };

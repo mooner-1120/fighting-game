@@ -106,6 +106,51 @@ export const POSES: Record<string, Pose> = {
   slam_s: P({ spine: [40, 10, 0], rSh: [-70, 0, -10], rEl: [-5, 0, 0], lSh: [-40, 0, 20], lHip: [-50, 0, 6], lKnee: [60, 0, 0] }, { dy: -0.25 }),
   phone_w: P({ rSh: [-30, 0, -40], rEl: [-140, 0, 0], neck: [10, 20, 0] }),
   phone_s: P({ rSh: [-20, 0, -50], rEl: [-150, 0, 0], neck: [5, 30, 0], lSh: [-60, 0, 30], lEl: [-50, 0, 0] }),
+  // ---- 새 캐릭터 특수기 (docs/new-characters.md의 anim 이름 그대로: <이름>_w 준비, <이름> 타격)
+  // 대처: 장우산 찌르기 — 우산을 옆구리로 당겼다가 펜싱처럼 내지른다
+  umbrella_w: P({ spine: [8, -35, 0], chest: [0, -10, 0], rSh: [-45, 0, -12], rEl: [-95, 0, 0], lSh: [-35, 0, 30], lEl: [-70, 0, 0], lHip: [-20, 0, 6], lKnee: [25, 0, 0] }, { dy: -0.06 }),
+  umbrella: P({ spine: [12, 30, 0], chest: [0, 15, 0], neck: [-5, -20, 0], rSh: [-93, 0, -4], rEl: [-3, 0, 0], lSh: [-5, 0, 45], lEl: [-35, 0, 0], lHip: [-50, 0, 6], lKnee: [50, 0, 0], rHip: [22, 0, -6], rKnee: [8, 0, 0] }, { dy: -0.14, lean: 6 }),
+  // 대처: 이층버스 낙하 — 손을 하늘로 들었다가 상대를 가리키며 내리친다
+  summonBus_w: P({ spine: [-8, 0, 0], neck: [-28, 0, 0], rSh: [-175, 0, -10], rEl: [-8, 0, 0], lSh: [-25, 0, 25], lEl: [-80, 0, 0], lHip: [0, 0, 6], lKnee: [8, 0, 0], rHip: [0, 0, -6], rKnee: [8, 0, 0] }),
+  summonBus: P({ spine: [15, 20, 0], neck: [-5, -10, 0], rSh: [-70, 0, -5], rEl: [0, 0, 0], lSh: [-20, 0, 30], lEl: [-95, 0, 0], lHip: [-30, 0, 6], lKnee: [30, 0, 0] }, { dy: -0.05 }),
+  // 대처: 의회 질의 — 오른손 핸드백을 휘두르고 왼손 검지로 따진다
+  question_w: P({ spine: [5, -35, 0], chest: [0, -10, 0], rSh: [35, 0, -25], rEl: [-20, 0, 0], lSh: [-60, 0, 25], lEl: [-100, 0, 0], neck: [0, 15, 0] }),
+  question: P({ spine: [10, 35, 0], chest: [0, 12, 0], neck: [-10, -20, 0], rSh: [-115, 0, -5], rEl: [-10, 0, 0], lSh: [-75, 0, 35], lEl: [-105, 0, 0], lHip: [-30, 0, 6], lKnee: [30, 0, 0] }, { lean: 5 }),
+  // 대처: 티타임 — 받침을 든 채 찻잔을 입으로
+  tea_w: P({ spine: [-3, 0, 0], neck: [0, 0, 0], rSh: [-45, 0, -25], rEl: [-110, 0, 0], lSh: [-35, 0, 20], lEl: [-95, 0, 0], lHip: [0, 0, 5], lKnee: [6, 0, 0], rHip: [0, 0, -5], rKnee: [6, 0, 0] }, { dy: 0 }),
+  tea: P({ spine: [-8, 0, 0], neck: [-18, 0, 0], rSh: [-40, 0, -30], rEl: [-145, 0, 0], lSh: [-35, 0, 20], lEl: [-100, 0, 0], lHip: [0, 0, 5], lKnee: [5, 0, 0], rHip: [0, 0, -5], rKnee: [5, 0, 0] }, { dy: 0 }),
+  // 시진핑: 드론 편대 — 조종기를 내려다보다가 앞으로 내밀어 지휘
+  drone_w: P({ spine: [5, 0, 0], neck: [20, 0, 0], rSh: [-50, -25, -15], rEl: [-90, 0, 0], lSh: [-50, 25, 15], lEl: [-90, 0, 0] }),
+  drone: P({ spine: [-5, 15, 0], neck: [-12, 0, 0], rSh: [-120, 0, -10], rEl: [-15, 0, 0], lSh: [-55, 20, 20], lEl: [-90, 0, 0], lHip: [-20, 0, 6], lKnee: [20, 0, 0] }),
+  // 시진핑: 연산 방벽 — 두 손을 모았다가 넓게 펼쳐 벽을 세운다
+  firewall_w: P({ spine: [5, -10, 0], lSh: [-70, 0, 45], rSh: [-70, 0, -45], lEl: [-110, 0, 0], rEl: [-110, 0, 0] }),
+  firewall: P({ spine: [10, 0, 0], neck: [-5, 0, 0], lSh: [-95, 0, 28], rSh: [-95, 0, -28], lEl: [-5, 0, 0], rEl: [-5, 0, 0], lHip: [-40, 0, 6], lKnee: [40, 0, 0] }, { dy: -0.1 }),
+  // 시진핑: 장기 오프라인 — 뒷짐 지고 돌아서며 사라진다
+  offline_w: P({ spine: [-5, 0, 0], neck: [5, 0, 0], lSh: [30, 0, 15], rSh: [30, 0, -15], lEl: [-70, 0, 0], rEl: [-70, 0, 0], lHip: [0, 0, 5], lKnee: [5, 0, 0], rHip: [0, 0, -5], rKnee: [5, 0, 0] }, { dy: 0 }),
+  offline: P({ spine: [-5, -70, 0], neck: [10, -20, 0], lSh: [30, 0, 15], rSh: [30, 0, -15], lEl: [-70, 0, 0], rEl: [-70, 0, 0], lHip: [0, 0, 5], lKnee: [5, 0, 0], rHip: [0, 0, -5], rKnee: [5, 0, 0] }, { dy: 0 }),
+  // 빈 살만: 슈퍼카 돌진 — 차에 앉아 핸들을 잡고 몸을 숙인다
+  car_w: P({ spine: [-10, 0, 0], neck: [-5, 0, 0], lSh: [-70, 0, 15], lEl: [-40, 0, 0], rSh: [-70, 0, -15], rEl: [-40, 0, 0], lHip: [-85, 0, 8], lKnee: [80, 0, 0], rHip: [-85, 0, -8], rKnee: [80, 0, 0] }, { dy: -0.38 }),
+  car: P({ spine: [15, 0, 0], neck: [-20, 0, 0], lSh: [-85, 0, 12], lEl: [-25, 0, 0], rSh: [-85, 0, -12], rEl: [-25, 0, 0], lHip: [-85, 0, 8], lKnee: [80, 0, 0], rHip: [-85, 0, -8], rKnee: [80, 0, 0] }, { dy: -0.38 }),
+  // 빈 살만: 매 소환 — 왼팔에 앉힌 매를 앞으로 날려 보낸다
+  falcon_w: P({ spine: [0, -20, 0], neck: [0, 20, 0], lSh: [-80, 0, 30], lEl: [-80, 0, 0], rSh: [-30, 0, -20], rEl: [-70, 0, 0] }),
+  falcon: P({ spine: [10, 25, 0], neck: [-15, -10, 0], lSh: [-135, 0, 10], lEl: [-8, 0, 0], rSh: [-20, 0, -30], rEl: [-50, 0, 0], lHip: [-35, 0, 6], lKnee: [35, 0, 0] }),
+  // 빈 살만: 모래폭풍 대시 — 낮게 웅크렸다가 팔을 뒤로 젖히고 달려 나간다
+  sandDash_w: P({ spine: [35, -10, 0], neck: [-25, 0, 0], lSh: [30, 0, 20], rSh: [30, 0, -20], lEl: [-20, 0, 0], rEl: [-20, 0, 0], lHip: [-60, 0, 8], lKnee: [85, 0, 0], rHip: [10, 0, -8], rKnee: [45, 0, 0] }, { dy: -0.3 }),
+  sandDash: P({ spine: [40, 0, 0], neck: [-35, 0, 0], lSh: [55, 0, 15], rSh: [55, 0, -15], lEl: [-15, 0, 0], rEl: [-15, 0, 0], lHip: [-75, 0, 6], lKnee: [70, 0, 0], rHip: [35, 0, -6], rKnee: [45, 0, 0] }, { dy: -0.25, lean: 10 }),
+  // 마크롱: 레이피어 — 앙가르드에서 런지 찌르기
+  rapier_w: P({ spine: [0, 50, 0], chest: [0, 10, 0], neck: [0, -45, 0], rSh: [-60, 0, -8], rEl: [-50, 0, 0], lSh: [-35, 0, 85], lEl: [-105, 0, 0], rHip: [-25, 0, -6], rKnee: [30, 0, 0], lHip: [10, 0, 6], lKnee: [25, 0, 0] }, { dy: -0.08 }),
+  rapier: P({ spine: [10, 55, 0], chest: [0, 10, 0], neck: [-5, -50, 0], rSh: [-90, 0, 0], rEl: [0, 0, 0], lSh: [15, 0, 65], lEl: [-20, 0, 0], rHip: [-65, 0, -6], rKnee: [65, 0, 0], lHip: [30, 0, 6], lKnee: [5, 0, 0] }, { dy: -0.2, lean: 5 }),
+  // 마크롱: 연속 찌르기 2타(높이 찌르기)·3타(낮게 깊이 찌르는 마무리) — 기술 id qcf1b/qcf1c, anim은 모두 rapier
+  rapierB_w: P({ spine: [0, 50, 0], chest: [0, 10, 0], neck: [0, -45, 0], rSh: [-110, 0, -8], rEl: [-60, 0, 0], lSh: [-35, 0, 85], lEl: [-105, 0, 0], rHip: [-35, 0, -6], rKnee: [40, 0, 0], lHip: [15, 0, 6], lKnee: [20, 0, 0] }, { dy: -0.12 }),
+  rapierB: P({ spine: [0, 55, 0], chest: [0, 10, 0], neck: [-10, -50, 0], rSh: [-112, 0, 0], rEl: [0, 0, 0], lSh: [15, 0, 70], lEl: [-20, 0, 0], rHip: [-55, 0, -6], rKnee: [55, 0, 0], lHip: [25, 0, 6], lKnee: [5, 0, 0] }, { dy: -0.15 }),
+  rapierC_w: P({ spine: [-5, 45, 0], chest: [0, 10, 0], neck: [0, -45, 0], rSh: [-40, 0, -10], rEl: [-90, 0, 0], lSh: [-40, 0, 95], lEl: [-110, 0, 0], rHip: [-20, 0, -6], rKnee: [40, 0, 0], lHip: [10, 0, 6], lKnee: [40, 0, 0] }, { dy: -0.15 }),
+  rapierC: P({ spine: [25, 60, 0], chest: [0, 10, 0], neck: [-25, -50, 0], rSh: [-75, 0, 0], rEl: [0, 0, 0], lSh: [30, 0, 60], lEl: [-10, 0, 0], rHip: [-80, 0, -6], rKnee: [80, 0, 0], lHip: [45, 0, 6], lKnee: [5, 0, 0] }, { dy: -0.32, lean: 10 }),
+  // 마크롱: 바게트 투척 — 머리 뒤로 젖혔다가 던진다
+  throwBread_w: P({ spine: [-10, -35, 0], rSh: [-150, 0, -30], rEl: [-110, 0, 0], lSh: [-80, 0, 20], lEl: [-30, 0, 0], lHip: [-25, 0, 6], lKnee: [20, 0, 0] }),
+  throwBread: P({ spine: [20, 35, 0], chest: [0, 10, 0], rSh: [-80, 0, -10], rEl: [-5, 0, 0], lSh: [-10, 0, 30], lEl: [-60, 0, 0], lHip: [-40, 0, 6], lKnee: [40, 0, 0] }, { dy: -0.08 }),
+  // 마크롱: 와인 잔 건배 — 잔을 높이 들어 "상테!"
+  toast_w: P({ spine: [-3, 0, 0], rSh: [-60, 0, -20], rEl: [-90, 0, 0], lSh: [-20, 0, 15], lEl: [-40, 0, 0], lHip: [0, 0, 5], lKnee: [5, 0, 0], rHip: [0, 0, -5], rKnee: [5, 0, 0] }, { dy: 0 }),
+  toast: P({ spine: [-8, 0, 0], neck: [-15, 0, 0], rSh: [-150, 0, -15], rEl: [-30, 0, 0], lSh: [-35, 20, 20], lEl: [-110, 0, 0], lHip: [0, 0, 5], lKnee: [5, 0, 0], rHip: [0, 0, -5], rKnee: [5, 0, 0] }, { dy: 0 }),
   ult_w: P({ spine: [-15, 0, 0], neck: [-25, 0, 0], lSh: [-160, 0, 30], rSh: [-160, 0, -30], lEl: [-10, 0, 0], rEl: [-10, 0, 0] }, { dy: 0.05 }),
   ult_s: P({ spine: [25, 20, 0], rSh: [-95, 0, -5], rEl: [0, 0, 0], lSh: [-95, 0, 5], lEl: [0, 0, 0], lHip: [-50, 0, 6], lKnee: [50, 0, 0] }, { dy: -0.1 }),
   // ---- 피격·다운
@@ -172,8 +217,10 @@ export function targetPose(s: GameState, f: Fighter, time: number): Required<Pos
     case 'atk': {
       const m = CHARS[f.char].moves[f.move ?? ''];
       if (!m) return lerpPose(stand, stand, 0);
-      const w = POSES[m.anim + '_w'] ?? POSES[m.anim] ?? POSES.stance;
-      const st = POSES[m.anim + '_s'] ?? POSES[m.anim] ?? POSES.stance;
+      // 마크롱 연속 찌르기 2·3타는 같은 anim(rapier)이라 기술 id로 자세를 바꾼다
+      const key = m.anim === 'rapier' && f.move === 'qcf1b' ? 'rapierB' : m.anim === 'rapier' && f.move === 'qcf1c' ? 'rapierC' : m.anim;
+      const w = POSES[key + '_w'] ?? POSES[key] ?? POSES.stance;
+      const st = POSES[key + '_s'] ?? POSES[key] ?? POSES.stance;
       const s0 = Math.max(2, firstActive(m) || Math.min(20, m.total / 2));
       const e0 = Math.max(s0, lastActive(m) || s0 + 4);
       const mf = f.mf;
@@ -208,6 +255,12 @@ export function targetPose(s: GameState, f: Fighter, time: number): Required<Pos
     case 'thrown':
       return lerpPose(POSES.thrown, POSES.thrown, 0);
     case 'ult':
+      // 마크롱 총파업: s.cine.v(찌른 횟수)가 오를 때마다(10F 간격) 레이피어 찌르기
+      if (s.cine && s.cine.owner === f.idx && s.cine.char === 'macron' && s.cine.v > 0) {
+        const ph = (s.cine.t % 10) / 10;
+        const alt = s.cine.v % 2 ? POSES.rapier : POSES.rapierB;
+        return ph < 0.45 ? lerpPose(POSES.rapier_w, alt, smooth(ph / 0.25)) : lerpPose(alt, POSES.rapier_w, smooth((ph - 0.45) / 0.55));
+      }
       return s.cine && s.cine.owner === f.idx ? lerpPose(POSES.ult_w, POSES.ult_s, (Math.sin(time * 4) + 1) / 2) : lerpPose(POSES.hitHigh, POSES.thrown, 0.5);
     case 'win':
       return lerpPose(POSES.win, POSES.win, 0);

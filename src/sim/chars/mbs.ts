@@ -140,9 +140,9 @@ export const mbs: CharDef = {
     { name: '궁극기 추가타', inputs: 'LP+RP → LP, RP', seq: ['ult', '51', '12'] },
   ],
   look: {
-    skin: 0xc99a72, suit: 0xf4f1ea, shirt: 0xf4f1ea, tie: 0xf4f1ea, pants: 0xf4f1ea,
-    hair: 0x1a1410, hairStyle: 'fade', headScale: 1.0, bodyW: 1.05, belly: 1.0, height: 1.02, accent: 0x2fbf71,
-    collar: 'mao',
+    skin: 0xc49470, suit: 0xf6f3ec, shirt: 0xf6f3ec, tie: 0, pants: 0xf6f3ec,
+    hair: 0x17110d, hairStyle: 'fade', headScale: 1.0, bodyW: 1.04, belly: 1.0, height: 1.02, accent: 0x2fbf71,
+    face: 'mbs', collar: 'mao', outfit: 'thobe',
   },
   theme: { root: 50, scale: [0, 1, 4, 5, 7, 8, 11], tempo: 138 },
 };

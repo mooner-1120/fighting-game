@@ -3,6 +3,9 @@ import * as THREE from 'three';
 import type { CharDef } from '../sim/chardef';
 import type { Fighter, GameState } from '../sim/types';
 import { buildFace } from './heads';
+import {
+  makeBaguette, makeController, makeFalcon, makeHandbag, makeRapier, makeSupercar, makeTeacup, makeUmbrella, makeWineGlass,
+} from './propMeshes';
 import { type JointName, targetPose } from './poses';
 
 const DEG = Math.PI / 180;
@@ -64,6 +67,14 @@ export class FighterModel {
   private jacket: THREE.Object3D[] = [];
   private bareChest: THREE.Object3D[] = [];
   private props: Record<string, THREE.Object3D> = {};
+  /** 새 캐릭터 소품: 어떤 anim일 때 보일지 */
+  private animProps: { obj: THREE.Object3D; anims: string[]; untilProj?: boolean }[] = [];
+  /** 손에 들었지만 몸 기준으로 똑바로 세워 두는 소품 (찻잔·와인잔·핸드백·매) */
+  private uprightProps: THREE.Object3D[] = [];
+  private ultProp: THREE.Object3D | null = null;
+  private skirt: THREE.Object3D | null = null;
+  private outlines: THREE.Object3D[] = [];
+  private ghost = 1;
   private flash = 0;
   private legLen: number;
   shadow: THREE.Mesh;
@@ -154,12 +165,38 @@ export class FighterModel {
         chest.add(b);
         this.jacket.push(b);
       }
-      for (const sx of [-1, 1]) {
+      for (const sx of L.outfit === 'thobe' ? [] : [-1, 1]) {
         const pocket = box(0.11, 0.06, 0.012, suit, false);
         pocket.position.set(sx * 0.13 * L.bodyW, 0.15, 0.155);
         chest.add(pocket);
         this.jacket.push(pocket);
       }
+    } else if (L.collar === 'bow') {
+      // 리본 블라우스: 흰 V 깃 + 목 앞의 큰 리본
+      const collar = box(0.17, 0.2, 0.02, shirt, false);
+      collar.position.set(0, 0.16, 0.155);
+      chest.add(collar);
+      this.jacket.push(collar);
+      const lapelMat = mk(new THREE.Color(L.suit).multiplyScalar(0.8).getHex());
+      for (const sx of [-1, 1]) {
+        const lapel = box(0.08, 0.3, 0.018, lapelMat, false);
+        lapel.position.set(sx * 0.11, 0.12, 0.162);
+        lapel.rotation.z = sx * 0.35;
+        chest.add(lapel);
+        this.jacket.push(lapel);
+        const loop = sphere(0.06, shirt, true, 10);
+        loop.scale.set(1.2, 0.7, 0.5);
+        loop.position.set(sx * 0.06, 0.24, 0.19);
+        loop.rotation.z = sx * -0.3;
+        chest.add(loop);
+        const tail = box(0.045, 0.14, 0.015, shirt, false);
+        tail.position.set(sx * 0.03, 0.15, 0.19);
+        tail.rotation.z = sx * 0.25;
+        chest.add(tail);
+      }
+      const knot = sphere(0.032, shirt, true, 8);
+      knot.position.set(0, 0.24, 0.2);
+      chest.add(knot);
     } else {
       const collar = box(0.16, 0.2, 0.02, shirt, false);
       collar.position.set(0, 0.16, 0.155);
@@ -189,6 +226,17 @@ export class FighterModel {
         const bot = new THREE.Mesh(new THREE.CircleGeometry(0.011, 12, Math.PI, Math.PI), mk(0x1a4fa8));
         top.position.z = bot.position.z = 0.002;
         pinG.add(c, top, bot);
+      } else if (L.pin === 'cn') {
+        const r = box(0.04, 0.028, 0.008, mk(0xde2910), false);
+        const st = sphere(0.006, mk(0xffde00), false, 5);
+        st.position.set(-0.012, 0.006, 0.006);
+        pinG.add(r, st);
+      } else if (L.pin === 'fr') {
+        [0x1f3a93, 0xffffff, 0xd8202c].forEach((c, i) => {
+          const b3 = box(0.012, 0.028, 0.008, mk(c), false);
+          b3.position.x = (i - 1) * 0.012;
+          pinG.add(b3);
+        });
       } else {
         const r = box(0.03, 0.04, 0.008, mk(0xd32f2f), false);
         pinG.add(r);
@@ -218,6 +266,38 @@ export class FighterModel {
         b.position.set(0.02, 0.2 - i * 0.09, 0.16);
         chest.add(b);
       }
+    }
+
+    if (L.pearls) {
+      // 진주 목걸이: 목둘레를 따라 앞으로 처지는 한 줄
+      const pearl = mk(0xfaf6ee, { emissive: 0x2a2820 });
+      const n = 17;
+      for (let i = 0; i < n; i++) {
+        const a = -1.9 + (3.8 * i) / (n - 1);
+        const p = sphere(0.019, pearl, false, 8);
+        p.position.set(Math.sin(a) * 0.12, 0.27 - Math.cos(a) * 0.05 - 0.01, Math.cos(a) * 0.12 + 0.02);
+        chest.add(p);
+      }
+    }
+    if (L.brooch) {
+      const br = new THREE.Group();
+      br.position.set(0.14 * L.bodyW, 0.15, 0.175);
+      br.rotation.z = 0.35;
+      const gold = mk(L.brooch, { emissive: 0x3a2a00 });
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.012, 12), gold);
+      disc.rotation.x = Math.PI / 2;
+      br.add(disc);
+      const gem = sphere(0.022, mk(0x2a5bd7, { emissive: 0x0a1a50 }), false, 8);
+      gem.position.z = 0.012;
+      br.add(gem);
+      for (let i = 0; i < 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const pp = sphere(0.009, mk(0xfaf6ee), false, 6);
+        pp.position.set(Math.cos(a) * 0.04, Math.sin(a) * 0.04, 0.008);
+        br.add(pp);
+      }
+      chest.add(br);
+      this.jacket.push(br);
     }
 
     // 목 + 머리
@@ -263,24 +343,78 @@ export class FighterModel {
       hand.scale.set(1, 1.1, 0.9);
       el.add(hand);
       if (side === 'r') this.props.hand = hand;
+      else this.props.handL = hand;
     }
 
-    // 다리
+    // 다리 (치마: 스타킹 다리 + 구두, 토브: 발목까지 내려오는 흰 옷자락 + 샌들)
+    const outfit = L.outfit ?? 'pants';
+    const legMat = outfit === 'skirt' ? mk(new THREE.Color(L.skin).lerp(new THREE.Color(0xc9a58a), 0.35).getHex()) : pants;
+    const footMat = outfit === 'skirt' ? mk(0x1a2340) : outfit === 'thobe' ? mk(0x5a3a22) : shoe;
     for (const side of ['l', 'r'] as const) {
       const sx = side === 'l' ? 1 : -1;
       const hip = J(side === 'l' ? 'lHip' : 'rHip', this.hips, sx * 0.11 * L.bodyW, -0.05);
-      const thigh = capsule(0.095, 0.3, pants);
+      const thigh = capsule(outfit === 'skirt' ? 0.075 : outfit === 'thobe' ? 0.12 : 0.095, 0.3, legMat);
       hip.add(thigh);
       const knee = J(side === 'l' ? 'lKnee' : 'rKnee', hip, 0, -0.42 * H);
-      const shin = capsule(0.08, 0.3, pants);
-      knee.add(shin);
-      const foot = box(0.14, 0.09, 0.28, shoe);
-      foot.position.set(0, -0.42 * H, 0.06);
+      if (outfit === 'thobe') {
+        // 정강이를 덮는 옷자락 (발목까지 넓어진다)
+        const robe = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.4 * H, 12), pants);
+        robe.position.y = -0.2 * H;
+        addOutline(robe, 1.05);
+        knee.add(robe);
+        const ankle = capsule(0.05, 0.03, mk(L.skin), false);
+        ankle.position.y = -0.36 * H;
+        knee.add(ankle);
+      } else {
+        const shin = capsule(outfit === 'skirt' ? 0.062 : 0.08, 0.3, legMat);
+        knee.add(shin);
+      }
+      const foot = outfit === 'skirt' ? box(0.1, 0.07, 0.22, footMat) : box(0.14, 0.09, 0.28, footMat);
+      foot.position.set(0, -0.42 * H + (outfit === 'skirt' ? 0.01 : 0), 0.06);
       knee.add(foot);
+      if (outfit === 'skirt') {
+        const heel = box(0.03, 0.08, 0.03, footMat, false);
+        heel.position.set(0, -0.42 * H - 0.05, -0.04);
+        knee.add(heel);
+      }
+    }
+    if (outfit !== 'pants') {
+      // 엉덩이에 매단 치마/토브 자락. 다리를 들면 같이 들린다 (update)
+      const sk = new THREE.Group();
+      sk.position.set(0, 0.04, 0);
+      this.hips.add(sk);
+      const len = outfit === 'skirt' ? 0.5 * H : 0.46 * H;
+      const top = (outfit === 'skirt' ? 0.2 : 0.22) * L.bodyW;
+      const bot = outfit === 'skirt' ? 0.27 : 0.28;
+      const skirtMat = mk(L.pants, { side: THREE.DoubleSide });
+      const cone = new THREE.Mesh(new THREE.CylinderGeometry(top, bot, len, 24, 1, true), skirtMat);
+      cone.position.y = -len / 2;
+      cone.scale.z = 0.85;
+      sk.add(cone);
+      const ol = new THREE.Mesh(cone.geometry, outlineMat);
+      ol.scale.set(1.05, 1.0, 1.05);
+      cone.add(ol);
+      if (outfit === 'skirt') {
+        // 주름 몇 줄
+        const pleat = mk(new THREE.Color(L.pants).multiplyScalar(0.75).getHex());
+        for (let i = 0; i < 6; i++) {
+          const a = -0.9 + i * 0.36;
+          const b2 = box(0.012, len * 0.9, 0.012, pleat, false);
+          b2.position.set(Math.sin(a) * (top + bot) * 0.5, -len / 2, Math.cos(a) * (top + bot) * 0.5 * 0.85 + 0.005);
+          b2.rotation.x = -Math.atan2(bot - top, len) * 0.85;
+          b2.rotation.y = a;
+          sk.add(b2);
+        }
+      }
+      this.skirt = sk;
     }
 
     this.buildProps(mk);
+    this.buildCharProps(mk, def.id);
     this.hips.position.y = this.legLen;
+    this.root.traverse((o) => {
+      if (o instanceof THREE.Mesh && o.material instanceof THREE.MeshBasicMaterial && o.material.side === THREE.BackSide) this.outlines.push(o);
+    });
 
     // 블롭 그림자
     const sh = new THREE.Mesh(
@@ -433,6 +567,74 @@ export class FighterModel {
     this.props.mic = mic;
   }
 
+  /** 새 캐릭터 손 소품. anim 이름은 docs/new-characters.md 표와 같다 */
+  private buildCharProps(mk: (c: number, extra?: THREE.MeshToonMaterialParameters) => THREE.MeshToonMaterial, id: string) {
+    const hand = this.props.hand;
+    const handL = this.props.handL;
+    const add = (parent: THREE.Object3D, obj: THREE.Object3D, anims: string[], untilProj = false, upright = false) => {
+      if (upright) {
+        // 손에 붙인 기준점을 몸 기준으로 똑바로 세운다 (update)
+        const anchor = new THREE.Group();
+        anchor.add(obj);
+        anchor.visible = false;
+        parent.add(anchor);
+        this.uprightProps.push(anchor);
+        this.animProps.push({ obj: anchor, anims, untilProj });
+        return anchor;
+      }
+      obj.visible = false;
+      parent.add(obj);
+      this.animProps.push({ obj, anims, untilProj });
+      return obj;
+    };
+    if (id === 'thatcher') {
+      this.ultProp = add(hand, makeUmbrella(mk), ['umbrella']);
+      const cup = makeTeacup(mk);
+      cup.scale.setScalar(0.85);
+      cup.position.set(0, 0.03, 0.04);
+      add(hand, cup, ['tea'], false, true);
+      const bag = makeHandbag(mk);
+      bag.scale.setScalar(1.6);
+      add(hand, bag, ['question'], false, true);
+    } else if (id === 'xi') {
+      this.ultProp = add(hand, makeController(mk), ['drone']);
+    } else if (id === 'mbs') {
+      const car = makeSupercar(mk);
+      car.position.set(0, 0, 0.15);
+      add(this.root, car, ['car']);
+      const bird = makeFalcon(mk);
+      bird.position.set(0, 0.05, 0);
+      this.ultProp = add(handL, bird, ['falcon'], true, true);
+    } else if (id === 'macron') {
+      this.ultProp = add(hand, makeRapier(mk), ['rapier']);
+      const b = makeBaguette(mk);
+      b.rotation.x = Math.PI / 2;
+      b.position.set(0, -0.06, 0.05);
+      add(hand, b, ['throwBread'], true);
+      const wine = makeWineGlass(mk);
+      wine.position.set(0, -0.14, 0.03);
+      add(hand, wine, ['toast'], false, true);
+    }
+  }
+
+  /** 반투명 (시진핑 잠적 등). 1 = 불투명 */
+  private setGhost(a: number) {
+    if (Math.abs(a - this.ghost) < 0.01) return;
+    const was = this.ghost < 0.999;
+    this.ghost = a;
+    const on = a < 0.999;
+    for (const m of this.mats) {
+      m.userData.baseT ??= { t: m.transparent, o: m.opacity };
+      if (on !== was) {
+        m.transparent = on || m.userData.baseT.t;
+        m.depthWrite = !on;
+        m.needsUpdate = true;
+      }
+      m.opacity = m.userData.baseT.o * a;
+    }
+    for (const o of this.outlines) o.visible = !on;
+  }
+
   /** 렌더 프레임마다 호출 */
   update(s: GameState, f: Fighter, dt: number, time: number) {
     // 위치·방향
@@ -471,7 +673,38 @@ export class FighterModel {
     this.props.golf.visible = anim === 'golf';
     this.props.slam.visible = anim === 'slam';
     this.props.phone.visible = anim === 'phone';
-    this.props.mic.visible = f.st === 'ult' && s.cine?.owner === f.idx;
+    const ulting = f.st === 'ult' && s.cine?.owner === f.idx;
+    this.props.mic.visible = ulting && !this.ultProp;
+    const mv = f.st === 'atk' && f.move ? this.def.moves[f.move] : undefined;
+    for (const p of this.animProps) {
+      let v = !!anim && p.anims.includes(anim);
+      if (v && p.untilProj && mv?.proj && f.mf >= mv.proj.f) v = false; // 던진 뒤엔 손에서 사라짐
+      p.obj.visible = v || (ulting && p.obj === this.ultProp);
+    }
+    // 치마·토브 자락: 앞으로 든 다리를 따라 들린다
+    if (this.skirt) {
+      const l = this.cur.get('lHip')!.x;
+      const r = this.cur.get('rHip')!.x;
+      const fwd = Math.min(0, l, r);
+      const back = Math.max(0, l, r);
+      this.skirt.rotation.x = (fwd * 0.55 + back * 0.3) * DEG;
+      this.skirt.scale.y = 1 - Math.min(0.25, -fwd / 400);
+    }
+    if (this.uprightProps.length) {
+      this.root.updateMatrixWorld(true);
+      const q = new THREE.Quaternion();
+      for (const a of this.uprightProps) {
+        if (!a.visible) continue;
+        a.parent!.getWorldQuaternion(q);
+        a.quaternion.copy(q.invert().multiply(this.root.quaternion));
+      }
+    }
+    // 렌더 연결: buffs.hidden > 0 — 시진핑 잠적(장기 오프라인)은 거의 투명, 빈 살만 모래폭풍 대시는 반투명.
+    // 잠적 기술을 막 시작한 몇 프레임은 hidden이 붙기 전이라 offline 자세로 점점 흐려지게 한다.
+    let ghost = 1;
+    if (f.buffs.hidden > 0) ghost = this.def.id === 'mbs' ? 0.5 : 0.2;
+    else if (anim === 'offline') ghost = Math.max(0.2, 1 - f.mf / 10);
+    this.setGhost(ghost);
 
     // 피격 플래시
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 5);
