@@ -800,8 +800,14 @@ export class GameView {
     for (const p of s.projs) {
       seen.add(p.id);
       let m = this.projMeshes.get(p.id);
+      // 롤백·초기화로 같은 id에 다른 종류 투사체가 오면 모양을 새로 만든다
+      if (m && m.userData.projKind !== p.kind) {
+        this.scene.remove(m);
+        m = undefined;
+      }
       if (!m) {
         m = this.projMesh(p);
+        m.userData.projKind = p.kind;
         this.projMeshes.set(p.id, m);
         this.scene.add(m);
       }

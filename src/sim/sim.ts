@@ -985,8 +985,10 @@ function startCine(s: GameState, A: Fighter, D: Fighter): void {
   D.move = null;
   A.y = D.y = 0;
   A.vx = A.vz = D.vx = D.vz = A.vy = D.vy = 0;
-  D.x = A.x + idiv(A.fx * 1300, 1000);
-  D.z = A.z + idiv(A.fz * 1300, 1000);
+  // 구석에서도 피격자가 경기장 밖에 서지 않게
+  const lim = ARENA - BODY_R;
+  D.x = clamp(A.x + idiv(A.fx * 1300, 1000), -lim, lim);
+  D.z = clamp(A.z + idiv(A.fz * 1300, 1000), -lim, lim);
   faceOpponent(D, A);
   emit(s, { k: 'cine', who: A.idx, fail: s.cine.fail });
 }
@@ -1052,8 +1054,10 @@ function updateProjs(s: GameState): void {
       if (d2 < min * min && enemy.y < 1500) {
         const d = isqrt(d2);
         const [nx, nz] = d === 0 ? [-owner.fx, -owner.fz] : norm1000(dx, dz);
-        enemy.x = p.x + idiv(nx * min, 1000);
-        enemy.z = p.z + idiv(nz * min, 1000);
+        // 경기장 밖으로 밀어내지 않는다 (벽에 붙은 상대는 방벽과 벽 사이에 낀다)
+        const lim = ARENA - BODY_R;
+        enemy.x = clamp(p.x + idiv(nx * min, 1000), -lim, lim);
+        enemy.z = clamp(p.z + idiv(nz * min, 1000), -lim, lim);
       }
       if (p.life <= 0) p.done = true;
       continue;

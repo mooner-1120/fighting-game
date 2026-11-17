@@ -342,6 +342,28 @@ console.log('새 캐릭터 테스트');
   ok(s.f[1].hp < hp1 && s.f[1].buffs.backTurn === 0, `xi: 등 공격 잽이 가드되지 않고 맞음 (${hp1} → ${s.f[1].hp}), 맞으면 등 돌림 해제`);
 }
 {
+  // 벽 앞: 시진핑 방벽이 상대를 경기장 밖으로 밀지 않음, 벽을 등진 상대에게 잠적하면 옆으로 나오고 등 공격 이득 없음
+  const lim = 5200 - 260;
+  const s = createState(cfg('xi', 'volkov', 7, false));
+  fight(s);
+  s.f[0].x = 3600;
+  s.f[1].x = 4940;
+  s.f[0].z = s.f[1].z = 0;
+  run(s, seq(QCF(BTN_RP), idle(40)));
+  ok(s.projs.some((p) => p.kind === 'firewall') && Math.abs(s.f[1].x) <= lim, `방벽에 밀려도 경기장 안 (x ${s.f[1].x})`);
+  const s2 = createState(cfg('xi', 'volkov', 7, false));
+  fight(s2);
+  s2.f[0].x = 4040;
+  s2.f[1].x = 4940;
+  s2.f[0].z = s2.f[1].z = 0;
+  let back = 0;
+  for (let i = 0; i < 60; i++) {
+    step(s2, [i < 2 ? B | BTN_LP : 0, 0]);
+    back = Math.max(back, s2.f[1].buffs.backTurn);
+  }
+  ok(back === 0 && Math.abs(s2.f[0].x) <= lim && Math.abs(s2.f[0].z) <= lim, `벽을 등진 상대: 옆으로 등장, 등 돌림 없음 (시진핑 ${s2.f[0].x},${s2.f[0].z})`);
+}
+{
   // 빈 살만 유가: 오르내리며 속도·공격력 변화
   const s = createState(cfg('mbs', 'seo'));
   fight(s);

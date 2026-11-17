@@ -2,7 +2,7 @@
 import type { CharDef } from '../chardef';
 import { baseMoves, UNIVERSAL_CMDS } from '../moves';
 import { dealDamage, emit, faceOpponent, spawnProj } from '../simutil';
-import { clamp, idiv } from '../fixed';
+import { idiv } from '../fixed';
 import { ARENA, BODY_R, type Fighter, type GameState } from '../types';
 import { COMMON_LIST, COMMON_SPOKE, ultMove } from './common';
 
@@ -87,14 +87,31 @@ export const xi: CharDef = {
         emit(s, { k: 'special', who: f.idx, name: '장기 오프라인…' });
       }
       if (f.mf === OFFLINE_TO) {
-        // 상대 뒤로 다시 나타난다
+        // 상대 뒤로 다시 나타난다. 상대가 벽을 등지고 있으면 옆으로 (그땐 등 공격 이득 없음)
         const lim = ARENA - BODY_R;
-        f.x = clamp(o.x - idiv(o.fx * 750, 1000), -lim, lim);
-        f.z = clamp(o.z - idiv(o.fz * 750, 1000), -lim, lim);
-        faceOpponent(f, o);
-        // 등 뒤를 잡힌 상대는 잠깐 돌아서지도, 막지도 못한다 (시진핑 회복 18F + 잽 발생보다 길게)
-        o.buffs.backTurn = 34;
-        emit(s, { k: 'special', who: f.idx, name: '등 뒤를 잡았다!' });
+        const spots: [number, number, boolean][] = [
+          [-o.fx, -o.fz, true], // 뒤
+          [-o.fz, o.fx, false], // 옆
+          [o.fz, -o.fx, false], // 반대쪽 옆
+        ];
+        let placed = false;
+        for (const [dx, dz, behind] of spots) {
+          const x = o.x + idiv(dx * 750, 1000);
+          const z = o.z + idiv(dz * 750, 1000);
+          if (Math.abs(x) > lim || Math.abs(z) > lim) continue;
+          f.x = x;
+          f.z = z;
+          placed = true;
+          faceOpponent(f, o);
+          if (behind) {
+            // 등 뒤를 잡힌 상대는 잠깐 돌아서지도, 막지도 못한다 (시진핑 회복 18F + 잽 발생보다 길게)
+            o.buffs.backTurn = 34;
+            emit(s, { k: 'special', who: f.idx, name: '등 뒤를 잡았다!' });
+          }
+          break;
+        }
+        // 구석이라 뒤도 옆도 막혔으면 제자리에 다시 나타난다
+        if (!placed) faceOpponent(f, o);
       }
     },
     spawn(s, f, _o, kind) {
