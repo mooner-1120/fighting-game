@@ -1,9 +1,9 @@
-// 마거릿 대처 (영국) — 우산 리치형. 고유 시스템: 티타임 (10초마다 3초 창, ↓+LP+RP로 차를 마셔 회복)
+// 마거릿 대처 (영국) — 우산 리치형. 고유 시스템: 티타임 (10초마다 3초 창, RP+LK로 차를 마셔 회복)
 import type { CharDef } from '../chardef';
 import { baseMoves, hit, UNIVERSAL_CMDS } from '../moves';
 import { dealDamage, emit, heal, spawnProj } from '../simutil';
 import { idiv } from '../fixed';
-import { BTN_LP, BTN_RP, R_D } from '../types';
+import { BTN_LK, BTN_RP } from '../types';
 import { COMMON_LIST, COMMON_SPOKE, ultMove } from './common';
 
 /** 티타임 주기 (프레임) */
@@ -81,13 +81,13 @@ export const thatcher: CharDef = {
         f.res[0] = 0;
         f.res[1] = TEA_WINDOW;
         emit(s, { k: 'teaTime', who: f.idx });
-        emit(s, { k: 'special', who: f.idx, name: '티타임! ↓+LP+RP' });
+        emit(s, { k: 'special', who: f.idx, name: '티타임! RP+LK' });
       }
     },
     customCmd(_s, f, _o, pr) {
       if (f.res[1] <= 0 || f.move === 'tea') return null;
-      if ((f.hist[0] & R_D) === 0) return null;
-      return (pr & BTN_LP) !== 0 && (pr & BTN_RP) !== 0 ? 'tea' : null;
+      // RP+LK: 다른 기술과 겹치지 않는 유일한 두 버튼 조합 (키보드 I+J)
+      return (pr & BTN_RP) !== 0 && (pr & BTN_LK) !== 0 ? 'tea' : null;
     },
     onMoveStart(_s, f, m) {
       if (m.id === 'tea') {
@@ -123,7 +123,7 @@ export const thatcher: CharDef = {
     { cmd: '← + LP', name: '의회 질의', desc: '짧은 질문 공격. 맞으면 길게 경직 → 원투로 이어진다' },
     { cmd: 'LK+RK', name: '장우산 회전 (EX)', desc: '아머 + 3연속 찌르기, 마지막 타 다운' },
     { cmd: 'LP+RP', name: '궁극기: 해협 봉쇄', desc: '물이 차오르고 군함 포격. 28% 피해 + 상대 5초 이동속도 -50%' },
-    { cmd: '↓ + LP+RP', name: '티타임', desc: '10초마다 「티타임」 알림, 3초 안에 입력하면 차를 마셔 체력 6% 회복. 마시는 동안 무방비' },
+    { cmd: 'RP+LK', name: '티타임', desc: '10초마다 「티타임」 알림, 3초 안에 입력하면 차를 마셔 체력 6% 회복. 마시는 동안 무방비' },
     ...COMMON_LIST,
   ],
   combos: [

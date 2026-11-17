@@ -92,6 +92,9 @@ export const xi: CharDef = {
         f.x = clamp(o.x - idiv(o.fx * 750, 1000), -lim, lim);
         f.z = clamp(o.z - idiv(o.fz * 750, 1000), -lim, lim);
         faceOpponent(f, o);
+        // 등 뒤를 잡힌 상대는 잠깐 돌아서지도, 막지도 못한다 (시진핑 회복 18F + 잽 발생보다 길게)
+        o.buffs.backTurn = 34;
+        emit(s, { k: 'special', who: f.idx, name: '등 뒤를 잡았다!' });
       }
     },
     spawn(s, f, _o, kind) {

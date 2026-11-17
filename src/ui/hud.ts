@@ -131,7 +131,7 @@ export class Hud {
           break;
         case 'thatcher':
           if (f.move === 'tea') r = '티타임 ☕ 마시는 중…';
-          else if (f.res[1] > 0) r = `티타임 ☕ ${Math.ceil(f.res[1] / 60)}초! (↓+LP+RP)`;
+          else if (f.res[1] > 0) r = `티타임 ☕ ${Math.ceil(f.res[1] / 60)}초! (RP+LK)`;
           else r = `티타임까지 ${Math.ceil(f.res[0] / 60)}초`;
           break;
         case 'xi':

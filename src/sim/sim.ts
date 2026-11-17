@@ -212,6 +212,7 @@ export function step(s: GameState, inputs: [number, number]): void {
     if (bf.tariff > 0) bf.tariff--;
     if (bf.briefing > 0) bf.briefing--;
     if (bf.hidden > 0) bf.hidden--;
+    if (bf.backTurn > 0) bf.backTurn--;
     if (bf.cage > 0) bf.cage--;
     if (f.bufT > 0) f.bufT--;
   }
@@ -251,6 +252,7 @@ export function step(s: GameState, inputs: [number, number]): void {
 // ---------------------------------------------------------------- 조작
 
 function autoFace(f: Fighter, o: Fighter): void {
+  if (f.buffs.backTurn > 0) return;
   const m = moveDef(f);
   if (FREE.has(f.st) || f.st === 'side' || f.st === 'dash' || f.st === 'bdash' || f.st === 'hs' || f.st === 'bs' || f.st === 'getup' || f.st === 'win') {
     faceOpponent(f, o);
@@ -416,7 +418,7 @@ function startMove(s: GameState, f: Fighter, o: Fighter, id: string): boolean {
   f.connected = 0;
   f.queued = null;
   f.crouching = !!m.crouch;
-  if (!m.noTurn) faceOpponent(f, o);
+  if (!m.noTurn && f.buffs.backTurn <= 0) faceOpponent(f, o);
   const h0 = m.hits[0];
   f.lastMove = { id, startup: firstActive(m), onBlock: h0 ? h0.onBlock : 0, onHit: h0 ? h0.onHit : 0 };
   return true;
@@ -754,6 +756,7 @@ interface HitCtx {
 
 function canGuard(s: GameState, D: Fighter): boolean {
   if (s.cfg.noGuard?.[D.idx]) return false;
+  if (D.buffs.backTurn > 0) return false;
   if ((D.hist[0] & R_F) !== 0 && D.st !== 'bs') return false;
   // 뒤 누르기 방식: 가드 경직 중이 아니면 뒤(↙ 포함)를 누르고 있어야 막는다
   if (s.cfg.guardBack && (D.hist[0] & R_B) === 0 && D.st !== 'bs') return false;
@@ -821,6 +824,7 @@ export function resolveHit(s: GameState, A: Fighter, D: Fighter, h: HitDef, c: H
   // 궁극기 → 컷신
   if (isUlt) {
     startCine(s, A, D);
+    D.buffs.backTurn = 0; // 맞으면 등 돌림이 풀린다
     return 'hit';
   }
 
@@ -890,6 +894,7 @@ export function resolveHit(s: GameState, A: Fighter, D: Fighter, h: HitDef, c: H
     D.y = Math.max(10, D.y);
   }
   s.hitstop = ch || h.heavy ? 8 : wasAir ? 3 : 5;
+  D.buffs.backTurn = 0; // 맞으면 등 돌림이 풀린다
   return 'hit';
 }
 
@@ -925,6 +930,7 @@ function throwCheck(s: GameState, A: Fighter, D: Fighter): void {
   D.queued = null;
   D.crouching = false;
   D.throwInfo = { breakBtn, until: 18, dmg: t.dmg, tag: m.id, partner: A.idx };
+  D.buffs.backTurn = 0;
   D.x = A.x + idiv(A.fx * 650, 1000);
   D.z = A.z + idiv(A.fz * 650, 1000);
   faceOpponent(D, A);

@@ -275,17 +275,17 @@ console.log('새 캐릭터 테스트');
   ok(best >= 5, `xi: 드론 일제 출격 EX 5타 (${best}히트)`);
 }
 {
-  // 대처 티타임: 창이 열리면 ↓+LP+RP 로 회복, 창 밖에서는 안 나감
+  // 대처 티타임: 창이 열리면 RP+LK 로 회복, 창 밖에서는 안 나감
   const s = createState(cfg('thatcher', 'seo'));
   fight(s);
   s.f[0].hp = 500;
-  run(s, [[IN_DOWN, 0], [IN_DOWN | BTN_LP | BTN_RP, 0], [IN_DOWN | BTN_LP | BTN_RP, 0], ...idle(60)]);
+  run(s, [[BTN_RP | BTN_LK, 0], [BTN_RP | BTN_LK, 0], ...idle(60)]);
   ok(s.f[0].hp === 500, '티타임 창 밖에서는 차를 못 마심');
   s.f[0].res[0] = 1;
   step(s, [0, 0]);
   ok(s.f[0].res[1] > 0, '10초 뒤 티타임 창 열림');
-  run(s, [[IN_DOWN, 0], [IN_DOWN | BTN_LP | BTN_RP, 0], [IN_DOWN | BTN_LP | BTN_RP, 0]]);
-  ok(s.f[0].move === 'tea', '↓+LP+RP 로 차 마시기 시작');
+  run(s, [[0, 0], [BTN_RP | BTN_LK, 0], [BTN_RP | BTN_LK, 0]]);
+  ok(s.f[0].move === 'tea', 'RP+LK 로 차 마시기 시작');
   run(s, idle(60));
   ok(s.f[0].hp > 500 && s.f[0].res[1] === 0, `티타임 회복 (500 → ${s.f[0].hp})`);
 }
@@ -324,6 +324,22 @@ console.log('새 캐릭터 테스트');
     if (i === 10) ok(s.f[0].buffs.hidden > 0, 'xi: 잠적 상태 (buffs.hidden)');
   }
   ok(s.f[0].hp === hp && s.f[0].x > s.f[1].x, `xi: 잠적 중 잽 무시 + 상대 뒤로 등장 (x ${s.f[0].x} > ${s.f[1].x})`);
+}
+{
+  // 시진핑 장기 오프라인 뒤 등 공격: 상대는 잠깐 돌아서지도, 막지도 못한다 (자동 가드여도 맞음)
+  const s = createState(cfg('xi', 'seo', 7, false));
+  fight(s);
+  s.f[0].x = -500;
+  s.f[1].x = 500;
+  let back = false;
+  for (let i = 0; i < 60; i++) {
+    step(s, [i < 2 ? B | BTN_LP : 0, 0]);
+    if (s.f[1].buffs.backTurn > 0) back = true;
+  }
+  ok(back && s.f[1].fx * (s.f[0].x - s.f[1].x) < 0, 'xi: 등장 직후 상대 등 돌림 (backTurn, 시진핑 쪽을 등지고 있음)');
+  const hp1 = s.f[1].hp;
+  for (let i = 0; i < 30; i++) step(s, [i < 2 ? BTN_LP : 0, 0]);
+  ok(s.f[1].hp < hp1 && s.f[1].buffs.backTurn === 0, `xi: 등 공격 잽이 가드되지 않고 맞음 (${hp1} → ${s.f[1].hp}), 맞으면 등 돌림 해제`);
 }
 {
   // 빈 살만 유가: 오르내리며 속도·공격력 변화

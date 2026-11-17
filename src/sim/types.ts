@@ -120,6 +120,8 @@ export interface Buffs {
   cage: number;
   cageX: number;
   cageZ: number;
+  /** 등 돌림 남은 프레임 (시진핑 장기 오프라인 뒤 상대). >0 이면 돌아서지 못하고 가드도 못 한다. 맞거나 잡히면 풀린다 */
+  backTurn: number;
 }
 
 export interface Fighter {
@@ -265,5 +267,5 @@ export const BODY_R = 260;
 export const CAGE_R = 1600;
 
 export function emptyBuffs(): Buffs {
-  return { armor: 0, atkUp: 0, slow: 0, tariff: 0, briefing: 0, hidden: 0, cage: 0, cageX: 0, cageZ: 0 };
+  return { armor: 0, atkUp: 0, slow: 0, tariff: 0, briefing: 0, hidden: 0, cage: 0, cageX: 0, cageZ: 0, backTurn: 0 };
 }
