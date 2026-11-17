@@ -73,7 +73,9 @@ export function portraits(): Map<CharId, string> {
       scene.add(m.root);
       m.root.updateMatrixWorld(true);
       // 머리 높이 근사
-      const head = new THREE.Vector3(0, 1.75 * def.look.height + 0.05, 0);
+      // 머리 높이 근사. 부풀린 머리(대처)·두건(빈 살만)처럼 위로 큰 머리는 꼭대기에 맞춰 올린다
+      const top = new THREE.Box3().setFromObject(m.root).max.y;
+      const head = new THREE.Vector3(0, Math.max(1.75 * def.look.height + 0.05, top - 0.36), 0);
       cam.position.set(0.55, head.y + 0.05, 2.3);
       cam.lookAt(0, head.y - 0.2, 0);
       r.render(scene, cam);

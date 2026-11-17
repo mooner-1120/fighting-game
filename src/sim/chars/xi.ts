@@ -133,9 +133,9 @@ export const xi: CharDef = {
     { name: '드론 일제 출격', inputs: 'LK+RK (5타)', seq: ['drone', 'drone', 'drone', 'drone', 'drone'] },
   ],
   look: {
-    skin: 0xf0d0ad, suit: 0x23262d, shirt: 0xffffff, tie: 0xb3202a, pants: 0x23262d,
-    hair: 0x111111, hairStyle: 'neat', headScale: 1.05, bodyW: 1.08, belly: 1.15, height: 0.98, accent: 0xffc928,
-    collar: 'tie', pin: 'red',
+    skin: 0xefcfa6, suit: 0x23262d, shirt: 0xffffff, tie: 0xc0212b, pants: 0x23262d,
+    hair: 0x0e0e10, hairStyle: 'neat', headScale: 1.06, bodyW: 1.1, belly: 1.2, height: 0.98, accent: 0xffc928,
+    face: 'xi', collar: 'tie', pin: 'red',
   },
   theme: { root: 50, scale: [0, 2, 4, 7, 9], tempo: 100 },
 };

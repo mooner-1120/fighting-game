@@ -132,9 +132,9 @@ export const thatcher: CharDef = {
     { name: '우산 회전', inputs: 'LK+RK (3타)', seq: ['ex', 'ex', 'ex'] },
   ],
   look: {
-    skin: 0xf2d4bf, suit: 0x1f3a7a, shirt: 0xffffff, tie: 0x1f3a7a, pants: 0x1f3a7a,
-    hair: 0xc9b48a, hairStyle: 'helmet', headScale: 1.0, bodyW: 0.92, belly: 0.9, height: 0.95, accent: 0x5c8dff,
-    collar: 'tie',
+    skin: 0xf4d8c4, suit: 0x1f4ea0, shirt: 0xfaf7f0, tie: 0, pants: 0x1f4ea0,
+    hair: 0xd9bd7c, hairStyle: 'helmet', headScale: 1.0, bodyW: 0.86, belly: 0.85, height: 0.95, accent: 0x5c8dff,
+    face: 'thatcher', collar: 'bow', outfit: 'skirt', pearls: true, brooch: 0xe8c547,
   },
   theme: { root: 52, scale: [0, 2, 4, 5, 7, 9, 11], tempo: 108 },
 };
