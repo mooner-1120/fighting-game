@@ -6,9 +6,10 @@ import type { CharId, Fighter, GameState } from '../../sim/types';
 import { targetPose, type JointName } from '../poses';
 import { dummyFighter, dummyState, gamePoseToKim } from '../kim/kimModel';
 import type { KimPart, KimPose, KimRig } from '../kim/kimRig';
-import { makeFalcon, makeSupercar } from '../propMeshes';
+import { makeFalcon, makeHandbag, makeSupercar, makeTeacup, makeUmbrella } from '../propMeshes';
 import * as mbs from './mbsRig';
 import * as putin from './putinRig';
+import * as thatcher from './thatcherRig';
 import * as trump from './trumpRig';
 
 interface RigModule {
@@ -22,6 +23,7 @@ const MODELS: Partial<Record<CharId, { file: string; rig: RigModule }>> = {
   volkov: { file: './models/putin_parts.json', rig: putin },
   rex: { file: './models/trump_parts.json', rig: trump },
   mbs: { file: './models/mbs_parts.json', rig: mbs },
+  thatcher: { file: './models/thatcher_parts.json', rig: thatcher },
 };
 const loaded = new Map<CharId, KimPart[]>();
 
@@ -72,6 +74,8 @@ export class StatueModel {
   /** 기술(anim)마다 보이는 소품. untilProj: 투사체를 던진 뒤엔 사라짐, upright: 몸 기준으로 똑바로 */
   private animProps: { obj: THREE.Object3D; anims: string[]; untilProj: boolean; upright: boolean }[] = [];
   private ghost = 1;
+  /** 궁극기 때 확성기 대신 장우산 */
+  private ultUmbrella = false;
 
   constructor(public def: CharDef, tint = false) {
     const parts = loaded.get(def.id);
@@ -129,6 +133,28 @@ export class StatueModel {
       this.animProps.push({ obj: anchor, anims: ['falcon'], untilProj: true, upright: true });
     }
 
+    // 대처: 장우산(궁극기에도 듦), 찻잔(티타임), 핸드백(의회 질의) — 오른손
+    if (def.id === 'thatcher') {
+      const mk = (c: number, extra: THREE.MeshToonMaterialParameters = {}) => new THREE.MeshToonMaterial({ color: c, ...extra });
+      const umb = makeUmbrella(mk);
+      umb.position.copy(palm);
+      umb.visible = false;
+      hand.add(umb);
+      this.animProps.push({ obj: umb, anims: ['umbrella', 'ult'], untilProj: false, upright: false });
+      const upright = (obj: THREE.Object3D, anims: string[], scale = 1) => {
+        const a = new THREE.Group();
+        obj.scale.setScalar(scale);
+        a.add(obj);
+        a.position.copy(palm);
+        a.visible = false;
+        hand.add(a);
+        this.animProps.push({ obj: a, anims, untilProj: false, upright: true });
+      };
+      upright(makeTeacup(mk), ['tea'], 0.85);
+      upright(makeHandbag(mk), ['question'], 1.6);
+      this.ultUmbrella = true;
+    }
+
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
     sh.rotation.x = -Math.PI / 2;
     sh.position.y = 0.01;
@@ -169,7 +195,8 @@ export class StatueModel {
     this.mod.applyPose(this.rig, gamePoseToKim(sm, this.legRatio));
 
     // 소품
-    const anim = f.st === 'atk' && f.move ? this.def.moves[f.move]?.anim : '';
+    const ulting = f.st === 'ult' && s.cine?.owner === f.idx;
+    const anim = f.st === 'atk' && f.move ? this.def.moves[f.move]?.anim : ulting ? 'ult' : '';
     this.club.visible = anim === 'golf';
     const mv = f.st === 'atk' && f.move ? this.def.moves[f.move] : undefined;
     let uprightDirty = false;
@@ -190,7 +217,7 @@ export class StatueModel {
     }
     // 모래폭풍 대시 등 통과 상태는 반투명
     this.setGhost(f.buffs.hidden > 0 ? 0.5 : 1);
-    this.mic.visible = f.st === 'ult' && s.cine?.owner === f.idx;
+    this.mic.visible = ulting && !this.ultUmbrella;
 
     // 웃통 벗기 (푸틴 아머): 맨살로 바꾸고, 벗는 순간 재킷·셔츠 조각이 찢어져 날아간다
     const bare = this.bareUniforms.length > 0 && f.buffs.armor > 0;
