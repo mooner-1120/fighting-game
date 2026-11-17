@@ -82,7 +82,7 @@ export class GameView {
       // 김정은·푸틴·트럼프는 리깅한 3D 모델을 쓴다 (못 읽었으면 도형 캐릭터)
       const tint = same && i === 1;
       const fm =
-        def.id === 'kang' && kimReady() ? new KimModel(def, tint) : statueReady(def.id) ? new StatueModel(def, tint) : new FighterModel(def, tint);
+        (def.id === 'kang' || def.id === 'xi') && kimReady(def.id) ? new KimModel(def, tint) : statueReady(def.id) ? new StatueModel(def, tint) : new FighterModel(def, tint);
       this.fighters.push(fm);
       this.scene.add(fm.root);
       this.scene.add(fm.shadow);
@@ -541,7 +541,7 @@ export class GameView {
     });
 
     const [tp, tl] = this.camTarget(s);
-    const kimCine = s.cine && this.fighters[s.cine.owner] instanceof KimModel;
+    const kimCine = s.cine && s.cine.char === 'kang' && this.fighters[s.cine.owner] instanceof KimModel;
     const k = kimCine ? 1 : s.cine ? 1 - Math.exp(-dt * 6) : 1 - Math.exp(-dt * 8);
     this.camPos.lerp(tp, k);
     this.camLook.lerp(tl, k);

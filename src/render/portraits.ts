@@ -30,7 +30,7 @@ export function portraits(): Map<CharId, string> {
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
     for (const def of CHAR_LIST) {
       scene.background = new THREE.Color(BG[def.id]);
-      if (def.id === 'kang' && kimReady()) {
+      if ((def.id === 'kang' || def.id === 'xi') && kimReady(def.id)) {
         // 리깅한 김정은 모델: 팔을 내린 차렷 자세로
         const k = new KimModel(def);
         applyPose(k.rig, { ...POSES.guard, root: [0, 0, 0], spine: [0, 0, 0], chest: [0, 0, 0], neck: [0, 0, 0], drop: 0, fist: 0.3, L_upper: [0.18, -1, 0.05], L_fore: [0.08, -1, 0.12], R_upper: [0.18, -1, 0.05], R_fore: [0.08, -1, 0.12] });

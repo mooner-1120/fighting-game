@@ -1,27 +1,33 @@
 // 리깅한 김정은 모델(OBJ 기반)을 게임 캐릭터로 쓰기 위한 래퍼.
+// 시진핑도 같은 몸(인민복)에 시진핑 흉상 머리를 붙인 모델(xi_parts.json)로 이 래퍼를 쓴다. 핵 단추 궁극기 연출은 김정은만.
 // 게임의 절차적 애니메이션(관절 각도)을 이 모델의 팔다리 방향으로 바꿔 재생한다 (리타기팅).
 import * as THREE from 'three';
 import type { CharDef } from '../../sim/chardef';
-import type { Fighter, GameState } from '../../sim/types';
+import type { CharId, Fighter, GameState } from '../../sim/types';
 import { targetPose, type JointName } from '../poses';
 import { applyPose, buildRig, J, MOVES, sampleMove, type KimPart, type KimPose, type KimRig } from './kimRig';
 import { buildProps, ULT, ultCamera, updateProps, type UltProps } from './kimUlt';
 
-let parts: KimPart[] | null = null;
+const FILES: Partial<Record<CharId, string>> = { kang: './models/kim_parts.json', xi: './models/xi_parts.json' };
+const loaded = new Map<CharId, KimPart[]>();
 
 /** 모델 데이터를 미리 읽어 둔다 (실패하면 기존 도형 캐릭터를 쓴다) */
 export async function loadKim(): Promise<void> {
-  try {
-    const res = await fetch('./models/kim_parts.json');
-    if (!res.ok) return;
-    parts = ((await res.json()) as { parts: KimPart[] }).parts;
-  } catch {
-    parts = null;
-  }
+  await Promise.all(
+    Object.entries(FILES).map(async ([id, file]) => {
+      try {
+        const res = await fetch(file!);
+        if (res.ok) loaded.set(id as CharId, ((await res.json()) as { parts: KimPart[] }).parts);
+      } catch {
+        /* 도형 캐릭터로 대신한다 */
+      }
+    }),
+  );
 }
 
-export function kimReady(): boolean {
-  return parts !== null;
+/** 김정은 몸 모델을 쓰는 캐릭터(김정은·시진핑)인지, 데이터를 읽었는지 */
+export function kimReady(id: CharId = 'kang'): boolean {
+  return loaded.has(id);
 }
 
 /** 궁극기 연출 속도: 배치기 착지(연출 3.0초)가 화면의 「직격!」 자막(컷신 3.6초) 직후에 오도록 */
@@ -49,14 +55,21 @@ export class KimModel {
   private flash = 0;
   private mats: THREE.MeshStandardMaterial[];
 
+  /** 핵 단추 궁극기 연출을 쓰는지 (김정은만) */
+  private nukeUlt: boolean;
+
   constructor(public def: CharDef, tint = false) {
-    if (!parts) throw new Error('김정은 모델이 아직 로드되지 않았습니다');
+    const parts = loaded.get(def.id);
+    if (!parts) throw new Error(`${def.name} 모델이 아직 로드되지 않았습니다`);
+    this.nukeUlt = def.id === 'kang';
     this.rig = buildRig(parts);
     this.mats = (this.rig.mesh.material as THREE.MeshStandardMaterial[]).filter((m) => m.name !== 'cornea');
+    // 시진핑은 김정은과 구별되게 회청색 중산복
+    if (def.id === 'xi') for (const m of this.mats) if (m.name === 'jacket' || m.name === 'pants') m.color.setHex(0x4b5566);
     if (tint) for (const m of this.mats) m.color.lerp(new THREE.Color(0x888888), 0.35);
     this.root.add(this.rig.mesh);
     this.props = buildProps(this.rig);
-    this.root.add(this.props.world);
+    if (this.nukeUlt) this.root.add(this.props.world);
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.45, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false }));
     sh.rotation.x = -Math.PI / 2;
     sh.position.y = 0.01;
@@ -66,7 +79,7 @@ export class KimModel {
 
   /** 이 캐릭터의 궁극기 컷신이 재생 중이면 컷신 시간(초, 연출 기준) */
   ultTime(s: GameState, f: Fighter): number | null {
-    if (!s.cine || s.cine.owner !== f.idx) return null;
+    if (!this.nukeUlt || !s.cine || s.cine.owner !== f.idx) return null;
     return (s.cine.t / 60) * ULT_SPEED;
   }
 
