@@ -70,12 +70,13 @@ interface SelState {
   stage: number; // -1 랜덤
   rounds: number;
   spoke: [boolean, boolean];
+  guardBack: boolean; // 로컬 대전에서는 쓰지 않음
 }
 
 const lastSel: Record<SelMode, SelState> = {
-  local: { chars: ['seo', 'volkov'], ctl: ['kb1', 'kb2'], stage: -1, rounds: 3, spoke: [false, false] },
-  cpu: { chars: ['seo', 'rex'], ctl: ['any', 'cpu2'], stage: -1, rounds: 3, spoke: [false, false] },
-  training: { chars: ['seo', 'volkov'], ctl: ['any', 'none'], stage: 0, rounds: 99, spoke: [false, false] },
+  local: { chars: ['seo', 'volkov'], ctl: ['kb1', 'kb2'], stage: -1, rounds: 3, spoke: [false, false], guardBack: false },
+  cpu: { chars: ['seo', 'rex'], ctl: ['any', 'cpu2'], stage: -1, rounds: 3, spoke: [false, false], guardBack: false },
+  training: { chars: ['seo', 'volkov'], ctl: ['any', 'none'], stage: 0, rounds: 99, spoke: [false, false], guardBack: false },
 };
 
 export function charSelect(nav: Nav, mode: SelMode) {
@@ -131,6 +132,10 @@ export function charSelect(nav: Nav, mode: SelMode) {
     h('option', { value: -1, selected: st.stage === -1 }, '랜덤'),
     ...STAGES.map((s, i) => h('option', { value: i, selected: st.stage === i }, `${s.name} — ${s.gimmick}`)),
   );
+  const guardSel = h('select', { onchange: (e: Event) => (st.guardBack = (e.target as HTMLSelectElement).value === 'back') },
+    h('option', { value: 'auto', selected: !st.guardBack }, '자동 가드 (철권식)'),
+    h('option', { value: 'back', selected: st.guardBack }, '뒤 누르기'),
+  );
   const roundSel = h('select', { onchange: (e: Event) => (st.rounds = Number((e.target as HTMLSelectElement).value)) }, ...[1, 2, 3, 4, 5].map((n) => h('option', { value: n, selected: st.rounds === n }, `${n}선승`)));
 
   const go = () => {
@@ -149,6 +154,7 @@ export function charSelect(nav: Nav, mode: SelMode) {
       h('div', { class: 'row', style: 'margin-top:16px' },
         h('span', null, '스테이지 '), stageSel,
         mode !== 'training' ? h('span', null, ' 라운드 ') : null, mode !== 'training' ? roundSel : null,
+        mode !== 'local' ? h('span', null, ' 가드 ') : null, mode !== 'local' ? guardSel : null,
         h('span', { class: 'spacer' }),
         h('button', { class: 'btn primary', style: 'font-size:20px;padding:14px 34px', onclick: go }, '시작!'),
       ),
@@ -164,6 +170,7 @@ function startLocal(nav: Nav, mode: SelMode, st: SelState) {
     rounds: mode === 'training' ? 99 : st.rounds,
     timer: 60,
     spokesman: mode === 'training' ? [false, false] : [...st.spoke] as [boolean, boolean],
+    guardBack: mode !== 'local' && st.guardBack,
     seed: (Math.random() * 1e9) | 0,
   };
   const names: [string, string] =

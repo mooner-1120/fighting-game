@@ -126,7 +126,7 @@ export class TrainingDriver extends Driver {
     const back = onLeft(s, 1) ? IN_LEFT : IN_RIGHT;
     switch (this.mode) {
       case 'guard':
-        p2 = 0;
+        p2 = s.cfg.guardBack ? back : 0;
         break;
       case 'crouchGuard':
         p2 = IN_DOWN | back;
@@ -136,7 +136,7 @@ export class TrainingDriver extends Driver {
           this.randT = 20 + Math.floor(Math.random() * 40);
           this.randLow = Math.random() < 0.5;
         }
-        p2 = this.randLow ? IN_DOWN | back : 0;
+        p2 = this.randLow ? IN_DOWN | back : s.cfg.guardBack ? back : 0;
         break;
       case 'cpu':
         p2 = this.brain.read(s);
