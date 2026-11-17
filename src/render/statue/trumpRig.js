@@ -259,6 +259,7 @@ function splitLimbs(p0, i0) {
   sizes.forEach(([l, sz], id) => { if (best[l] === undefined || sz > sizes[best[l]][1]) best[l] = id; });
   for (let v = 0; v < n0; v++) if (lab[v] !== 0 && best[lab[v]] !== comp[v]) lab[v] = 0;
   const dup = new Map();
+  const other = new Map(); // 잘린 자리 정점 → 맞은편 라벨
   for (let t = 0; t < idx.length; t += 3) {
     const v = [idx[t], idx[t + 1], idx[t + 2]];
     const l = v.map((k) => lab[k]);
@@ -274,11 +275,88 @@ function splitLimbs(p0, i0) {
         pos.push(pos[v[k] * 3], pos[v[k] * 3 + 1], pos[v[k] * 3 + 2]);
         lab.push(want);
         dup.set(key, nv);
+        other.set(nv, lab[v[k]]);
+        other.set(v[k], want);
       }
       idx[t + k] = nv;
     }
   }
-  return { pos, idx, lab };
+  const caps = capHoles(pos, idx, lab, other);
+  return { pos, idx, lab, caps };
+}
+
+/** 잘라 낸 자리(열린 테두리)를 막는다: 테두리 고리마다 가운데 점을 하나 두고 부채꼴로 채운다.
+ *  막는 면은 정점을 따로 복제해 써서 원래 표면의 법선(음영)에 영향을 주지 않는다. */
+function capHoles(pos, idx, lab, other) {
+  const nTri = idx.length;
+  const cnt = new Map();
+  const key = (a, b) => (a < b ? a * 4194304 + b : b * 4194304 + a);
+  for (let t = 0; t < nTri; t += 3) {
+    for (let k = 0; k < 3; k++) {
+      const kk = key(idx[t + k], idx[t + ((k + 1) % 3)]);
+      cnt.set(kk, (cnt.get(kk) || 0) + 1);
+    }
+  }
+  // 열린 테두리: 삼각형 하나에만 속한 모서리. 막는 면은 반대 방향(b→a)으로 감는다
+  const next = new Map();
+  for (let t = 0; t < nTri; t += 3) {
+    for (let k = 0; k < 3; k++) {
+      const a = idx[t + k], b = idx[t + ((k + 1) % 3)];
+      if (cnt.get(key(a, b)) === 1) next.set(b, a);
+    }
+  }
+  const used = new Set();
+  const caps = [];
+  for (const start of next.keys()) {
+    if (used.has(start)) continue;
+    const loop = [];
+    let v = start;
+    while (v !== undefined && !used.has(v)) {
+      used.add(v);
+      loop.push(v);
+      v = next.get(v);
+    }
+    if (v !== start || loop.length < 5) continue;
+    // 몸통과 팔·손 사이만 막는다 (손목처럼 팔 안쪽 경계는 붙어 움직이므로 그대로 둔다)
+    const touchesBody = (u) => lab[u] === 0 || other.get(u) === 0;
+    if (loop.filter(touchesBody).length < loop.length * 0.8) continue;
+    // 잘린 선이 톱니처럼 들쭉날쭉해서, 고리를 따라 위치를 몇 번 고르게 편다 (양쪽 고리가 같은 위치라 틈이 안 생긴다)
+    for (let it = 0; it < 4; it++) {
+      const P = loop.map((u) => [pos[u * 3], pos[u * 3 + 1], pos[u * 3 + 2]]);
+      for (let i = 0; i < loop.length; i++) {
+        const a = P[(i + loop.length - 1) % loop.length], b = P[(i + 1) % loop.length];
+        if (!touchesBody(loop[i])) continue;
+        for (let d = 0; d < 3; d++) pos[loop[i] * 3 + d] = P[i][d] * 0.5 + (a[d] + b[d]) * 0.25;
+      }
+    }
+    // 고리 안 라벨 다수결 (팔 쪽/몸통 쪽)
+    const lc = new Map();
+    for (const u of loop) lc.set(lab[u], (lc.get(lab[u]) || 0) + 1);
+    const l = [...lc.entries()].sort((x, y) => y[1] - x[1])[0][0];
+    let cx = 0, cy = 0, cz = 0;
+    for (const u of loop) { cx += pos[u * 3]; cy += pos[u * 3 + 1]; cz += pos[u * 3 + 2]; }
+    const c = pos.length / 3;
+    pos.push(cx / loop.length, cy / loop.length, cz / loop.length);
+    lab.push(l);
+    const copy = loop.map((u) => {
+      const nv = pos.length / 3;
+      pos.push(pos[u * 3], pos[u * 3 + 1], pos[u * 3 + 2]);
+      lab.push(lab[u]);
+      return nv;
+    });
+    for (let i = 0; i < copy.length; i++) idx.push(copy[i], copy[(i + 1) % copy.length], c);
+    // 막는 면은 평평하게 보이도록 법선 하나 (뉴얼 방법)
+    const n = [0, 0, 0];
+    for (let i = 0; i < copy.length; i++) {
+      const a = copy[i] * 3, b = copy[(i + 1) % copy.length] * 3;
+      n[0] += (pos[a + 1] - pos[b + 1]) * (pos[a + 2] + pos[b + 2]);
+      n[1] += (pos[a + 2] - pos[b + 2]) * (pos[a] + pos[b]);
+      n[2] += (pos[a] - pos[b]) * (pos[a + 1] + pos[b + 1]);
+    }
+    const len = Math.hypot(...n) || 1;
+    caps.push({ verts: [c, ...copy], n: n.map((x) => x / len) });
+  }
+  return caps;
 }
 
 export function buildRig(parts) {
@@ -314,6 +392,7 @@ export function buildRig(parts) {
       tmp.setIndex(sp.idx);
       tmp.computeVertexNormals();
       const nrm = Array.from(tmp.attributes.normal.array);
+      for (const cap of sp.caps) for (const v of cap.verts) nrm.splice(v * 3, 3, ...cap.n);
       const col = colorSplit(sp.pos, sp.idx, labels, nrm);
       g.setAttribute('position', new THREE.Float32BufferAttribute(sp.pos, 3));
       g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
