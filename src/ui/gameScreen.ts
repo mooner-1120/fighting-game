@@ -190,6 +190,10 @@ export class GameScreen {
         case 'boom':
           audio.play('boom');
           break;
+        case 'dud':
+          this.hud.toast(e.who, '불발! 자폭 -10%');
+          say('불발입니다! 담당자는 지금 행방불명입니다.', 2, true);
+          break;
         case 'wall':
           if (Math.random() < 0.5) say(ANCHOR.wall(), 1);
           break;

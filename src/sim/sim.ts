@@ -1009,6 +1009,9 @@ function endCine(s: GameState): void {
     A.vz = -idiv(A.fz * 10, 1000);
     becomeIdle(D);
     emit(s, { k: 'hit', who: A.idx, x: A.x, y: 1000, z: A.z, heavy: true, ch: false, dmg: before[0] - A.hp });
+    emit(s, { k: 'dud', who: A.idx });
+    emit(s, { k: 'boom', x: A.x, z: A.z });
+    return;
   } else {
     setState(D, 'air');
     D.vy = lift(22);

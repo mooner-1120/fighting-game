@@ -115,16 +115,27 @@ export function buildProps(rig) {
 const TINY = 0.0001;
 
 /** 소품을 t초 상태로 맞춘다 (t < 0 이면 모두 숨김) */
-export function updateProps(props, t) {
+/** fail: 불발 — 꼬리 불꽃이 꺼져 가며 착지 때 폭발 대신 검은 연기가 피어오른다 */
+export function updateProps(props, t, fail = false) {
   const st = t < 0 ? { button: 0, press: 0, tail: 0, boom: 0, ring: 0, crater: 0, alarm: 0 } : propState(t);
   props.button.scale.setScalar(Math.max(TINY, st.button));
   props.top.position.y = 0.74 - st.press * 0.04;
   props.top.material.emissive.setHex(st.alarm ? (Math.floor(t * 8) % 2 ? 0xff2020 : 0x550000) : 0x330000);
   props.tail.scale.setScalar(Math.max(TINY, st.tail));
-  props.flame.scale.set(1, 0.7 + 0.5 * Math.abs(Math.sin(t * 40)), 1);
+  if (fail && t > 2.35) {
+    // 엔진 꺼짐: 불꽃이 깜빡이다 사라진다
+    const on = t < 2.9 && Math.sin(t * 57) > 0.2;
+    props.flame.scale.setScalar(on ? 0.6 : TINY);
+  } else {
+    props.flame.scale.set(1, 0.7 + 0.5 * Math.abs(Math.sin(t * 40)), 1);
+  }
+  props.boom.material.color.setHex(fail ? 0x2b2b2b : 0xff8a1a);
+  props.ring.material.color.setHex(fail ? 0x555555 : 0xffe0a0);
   props.boom.scale.setScalar(Math.max(TINY, st.boom * 1.5));
-  props.boom.material.opacity = 0.55 * Math.min(1, st.boom * 1.5) * (t < 3.25 ? 1 : 0.6);
-  props.ring.scale.setScalar(Math.max(TINY, st.ring * 6));
+  props.boom.material.opacity = (fail ? 0.8 : 0.55) * Math.min(1, st.boom * 1.5) * (t < 3.25 ? 1 : 0.6);
+  // 불발 연기는 터진 뒤 위로 피어오른다
+  props.boom.position.y = fail ? 0.25 + Math.max(0, t - 3.0) * 1.2 : 0.25;
+  props.ring.scale.setScalar(Math.max(TINY, st.ring * (fail ? 2.5 : 6)));
   props.ring.material.opacity = 0.9 * (1 - st.ring);
   props.crater.scale.setScalar(Math.max(TINY, st.crater));
 }

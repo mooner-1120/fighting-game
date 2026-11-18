@@ -223,6 +223,7 @@ export type GameEvent =
   | { k: 'parry'; who: number }
   | { k: 'proj'; who: number; kind: string }
   | { k: 'boom'; x: number; z: number }
+  | { k: 'dud'; who: number }
   | { k: 'heal'; who: number; amt: number }
   | { k: 'special'; who: number; name: string }
   | { k: 'counter'; who: number }

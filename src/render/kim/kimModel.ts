@@ -94,7 +94,7 @@ export class KimModel {
     if (ut !== null) {
       // 궁극기: 핵 단추 → 탄두가 된 원수님 → 배치기
       applyPose(this.rig, sampleMove(MOVES[ULT], ut));
-      updateProps(this.props, ut);
+      updateProps(this.props, ut, !!s.cine?.fail);
       this.shadow.visible = ut < 1.3 || ut > 2.85;
     } else {
       updateProps(this.props, -1);

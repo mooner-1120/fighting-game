@@ -15,6 +15,6 @@ export interface UltProps {
 export const ULT: string;
 export function propState(t: number): Record<string, number>;
 export function buildProps(rig: KimRig): UltProps;
-export function updateProps(props: UltProps, t: number): void;
+export function updateProps(props: UltProps, t: number, fail?: boolean): void;
 export function ultCamera(t: number, rootY: number): { pos: THREE.Vector3; target: THREE.Vector3 };
 export function propTracks(times: number[]): THREE.KeyframeTrack[];
