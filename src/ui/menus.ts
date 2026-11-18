@@ -71,6 +71,7 @@ interface SelState {
   rounds: number;
   spoke: [boolean, boolean];
   guardBack: boolean; // 로컬 대전에서는 쓰지 않음
+  randomOpp?: boolean; // CPU 대전: 상대를 매 판 무작위로
 }
 
 const lastSel: Record<SelMode, SelState> = {
@@ -97,10 +98,10 @@ export function charSelect(nav: Nav, mode: SelMode) {
       ...CHAR_LIST.map((c) => {
         const cls = ['char-card'];
         if (st.chars[0] === c.id) cls.push('p1');
-        if (st.chars[1] === c.id) cls.push('p2');
-        return h('div', { class: cls.join(' '), onclick: () => { st.chars[picking] = c.id; audio.play('select'); picking = mode === 'local' || mode === 'cpu' || mode === 'training' ? 1 - picking : 0; render(); } },
+        if (st.chars[1] === c.id && !(mode === 'cpu' && st.randomOpp)) cls.push('p2');
+        return h('div', { class: cls.join(' '), onclick: () => { st.chars[picking] = c.id; if (picking === 1) st.randomOpp = false; audio.play('select'); picking = mode === 'local' || mode === 'cpu' || mode === 'training' ? 1 - picking : 0; render(); } },
           st.chars[0] === c.id ? h('span', { class: 'cur c1' }, '1P') : null,
-          st.chars[1] === c.id ? h('span', { class: 'cur c2' }, mode === 'training' ? '더미' : mode === 'cpu' ? 'CPU' : '2P') : null,
+          st.chars[1] === c.id && !(mode === 'cpu' && st.randomOpp) ? h('span', { class: 'cur c2' }, mode === 'training' ? '더미' : mode === 'cpu' ? 'CPU' : '2P') : null,
           h('img', { src: pics.get(c.id), alt: c.name }),
           h('div', { class: 'nm' }, c.name),
           h('div', { class: 'ct' }, c.country),
@@ -111,12 +112,16 @@ export function charSelect(nav: Nav, mode: SelMode) {
     sides.replaceChildren(
       ...[0, 1].map((i) => {
         const def = CHARS[st.chars[i]];
+        const rnd = mode === 'cpu' && i === 1 && !!st.randomOpp;
         const label = i === 0 ? '1P' : mode === 'training' ? '더미' : mode === 'cpu' ? 'CPU' : '2P';
         const ctl = h('select', { onchange: (e: Event) => { st.ctl[i] = (e.target as HTMLSelectElement).value as Ctl; } }, ...ctlOptions(i).map(([v, l]) => h('option', { value: v, selected: st.ctl[i] === v }, l)));
         return h('div', { class: `panel sel-side ${i ? 'p2' : 'p1'}` },
-          h('div', { class: 'row' }, h('h3', null, `${label} · ${def.name}`), h('span', { class: 'spacer' }), h('button', { class: 'btn sm' + (picking === i ? ' on' : ''), onclick: () => { picking = i; render(); } }, picking === i ? '선택 중' : '이 칸 선택')),
+          h('div', { class: 'row' }, h('h3', null, `${label} · ${rnd ? '무작위 ?' : def.name}`), h('span', { class: 'spacer' }), h('button', { class: 'btn sm' + (picking === i ? ' on' : ''), onclick: () => { picking = i; render(); } }, picking === i ? '선택 중' : '이 칸 선택')),
           mode !== 'training' || i === 0 ? h('div', { class: 'row small' }, '조작: ', ctl) : null,
-          h('div', { class: 'uniq' },
+          mode === 'cpu' && i === 1
+            ? h('label', { class: 'row small', style: 'margin-top:6px' }, h('input', { type: 'checkbox', checked: rnd, onchange: (e: Event) => { st.randomOpp = (e.target as HTMLInputElement).checked; render(); } }), '상대 무작위 (매 판 새로 뽑기)')
+            : null,
+          rnd ? h('div', { class: 'uniq muted' }, '시작할 때마다 내 캐릭터를 뺀 나머지 중에서 무작위로 상대가 정해집니다.') : h('div', { class: 'uniq' },
             h('div', null, h('b', null, `고유 시스템 · ${def.resName}`), ' — ', def.moveList.find((m) => m.cmd === '고유')?.desc ?? ''),
             h('div', null, h('b', null, `궁극기 · ${def.ultName}`), ' — ', def.moveList.find((m) => m.cmd === 'LP+RP')?.desc ?? ''),
           ),
@@ -164,6 +169,10 @@ export function charSelect(nav: Nav, mode: SelMode) {
 }
 
 function startLocal(nav: Nav, mode: SelMode, st: SelState) {
+  if (mode === 'cpu' && st.randomOpp) {
+    const pool = CHAR_LIST.map((c) => c.id).filter((id) => id !== st.chars[0]);
+    st.chars[1] = pool[Math.floor(Math.random() * pool.length)];
+  }
   const cfg: MatchConfig = {
     chars: [...st.chars] as [CharId, CharId],
     stage: st.stage < 0 ? Math.floor(Math.random() * STAGES.length) : st.stage,
