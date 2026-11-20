@@ -5,7 +5,7 @@ import type { MoveDef } from '../types';
 export function ultMove(name: string): MoveDef {
   return {
     id: 'ult', name, total: 75, anim: 'ult', ult: true, invuln: [1, 12],
-    hits: [hit(18, 4, 0, 'm', 1550, -30, 0, { width: 480, tag: 'ult' })],
+    hits: [hit(10, 4, 0, 'm', 1550, -30, 0, { width: 480, tag: 'ult' })],
   };
 }
 
@@ -25,7 +25,7 @@ export const COMMON_LIST: MoveListEntry[] = [
   { cmd: '↗ + RK', name: '점프 니킥', desc: '하단을 피하며 띄우기' },
   { cmd: 'LP+LK / RP+RK', name: '잡기', desc: 'LP 잡기는 LP, RP 잡기는 RP로 풀기' },
   { cmd: 'LK+RK', name: '강화기 (EX)', desc: '권력 게이지 1칸 소모' },
-  { cmd: 'LP+RP', name: '궁극기', desc: '권력 게이지 3칸, 라운드당 1회' },
+  { cmd: 'LP+RP', name: '궁극기', desc: '권력 게이지 3칸, 라운드당 1회. 발생 10F · 기술이 맞으면 캔슬해서 이어 쓰기 가능' },
   { cmd: 'LP+RK', name: '비상 담화', desc: '체력 25% 이하에서 라운드당 1회, 아머 반격기' },
   { cmd: '↑ / ↓ 탭', name: '횡이동', desc: '직선 기술을 피한다' },
   { cmd: '→→ / ←←', name: '대시 / 백대시', desc: '' },

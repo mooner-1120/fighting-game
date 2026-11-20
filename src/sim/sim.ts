@@ -191,8 +191,11 @@ export function step(s: GameState, inputs: [number, number]): void {
 
   if (s.hitstop > 0) {
     s.hitstop--;
-    // 경직 중에도 선입력은 받는다
-    for (const f of s.f) captureBuffer(f);
+    // 경직 중에도 선입력은 받는다 (맞힌 순간 LP+RP → 경직이 풀리자마자 궁극기)
+    for (const f of s.f) {
+      if (wantsUltCancel(f)) f.queued = ULT_CANCEL;
+      else captureBuffer(f);
+    }
     return;
   }
 
@@ -428,6 +431,8 @@ function startMove(s: GameState, f: Fighter, o: Fighter, id: string): boolean {
 function attackInput(s: GameState, f: Fighter, o: Fighter): void {
   const m = moveDef(f);
   if (!m) return;
+  // 궁극기 캔슬: 기술이 맞았으면(가드 X) 그 기술의 남은 동작을 끊고 바로 궁극기
+  if ((f.queued === ULT_CANCEL || wantsUltCancel(f)) && startMove(s, f, o, 'ult')) return;
   if (f.mf <= 2 && !COMBO_IDS.has(m.id)) {
     if (tryMove(s, f, o, true)) return;
   }
@@ -455,6 +460,17 @@ function attackInput(s: GameState, f: Fighter, o: Fighter): void {
   // 그 외 버튼은 선입력으로 저장
   f.buf = now;
   f.bufT = 10;
+}
+
+const ULT_CANCEL = '^ult';
+
+/** 맞힌 기술 도중 LP+RP를 새로 눌렀나 (궁극기 캔슬 조건) */
+function wantsUltCancel(f: Fighter): boolean {
+  const m = moveDef(f);
+  if (f.st !== 'atk' || !m || m.ult || f.connected !== 1 || f.gauge < GAUGE_MAX || f.ultUsed) return false;
+  const fresh = f.hist[0] & ~f.hist[1] & BTN_ALL;
+  const pr = recentPresses(f.hist, 3) | fresh;
+  return fresh !== 0 && (pr & BTN_LP) !== 0 && (pr & BTN_RP) !== 0;
 }
 
 function throwBreakCheck(s: GameState, f: Fighter): void {

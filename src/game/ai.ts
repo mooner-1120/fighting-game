@@ -21,8 +21,13 @@ export class CpuBrain {
       this.queue = [];
       return 0;
     }
-    if (this.queue.length) return this.queue.shift()!;
     const me = s.f[this.idx];
+    // 맞힌 기술을 궁극기로 캔슬 (난이도가 높을수록 자주)
+    if (me.st === 'atk' && me.connected === 1 && me.gauge >= 3000 && !me.ultUsed && Math.random() < (this.level === 1 ? 0.03 : this.level === 2 ? 0.08 : 0.2)) {
+      this.queue = [];
+      return BTN_LP | BTN_RP;
+    }
+    if (this.queue.length) return this.queue.shift()!;
     const op = s.f[1 - this.idx];
     const { F, B } = this.dirs(s);
     const d = Math.hypot(op.x - me.x, op.z - me.z);
